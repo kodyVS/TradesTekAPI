@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^6.2.0",
-    "quickbooks-js": "^1.0.0"
+    "quickbooks-js": "^1.0.0",
+    "xmlbuilder": "^10.1.1"
   }
 }
