@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <?qbxml version="13.0"?>
 <QBXML>
     <QBXMLMsgsRq onError="stopOnError">
@@ -6,103 +7,13 @@
                 <CustomerRef>
                     <FullName>juan castellon</FullName>
                 </CustomerRef>
-                <TxnDate>2019-01-14</TxnDate>
-                <RefNumber>1234</RefNumber>
-                <BillAddress>
-                    <Addr1>123 fake avenue</Addr1>
-                    <City>springfield</City>
-                    <State>AB</State>
-                    <PostalCode>1234</PostalCode>
-                    <Country>USA</Country>
-                </BillAddress>
-                <PONumber>43221</PONumber>
-                <DueDate>2019-01-15</DueDate>
-                <ItemSalesTaxRef>
-                    <FullName>Texas State</FullName>
-                </ItemSalesTaxRef>
-                <Memo>please hurry</Memo>
-                <CustomerMsgRef>
-                    <FullName>Thanks for spending your mony with us!</FullName>
-                </CustomerMsgRef>
-                <IsToBeEmailed>true</IsToBeEmailed>
                 <InvoiceLineAdd>
-                    <ItemRef>
-                        <FullName>LONGVIEW-WHSE:424202S</FullName>
-                    </ItemRef>
-                    <Desc>424202S - PRINCE CASTLE KIT MAIN PCB ASSY</Desc>
-                    <Quantity>2.00</Quantity>
-                    <Rate>2.00</Rate>
-                </InvoiceLineAdd>
-            </InvoiceAdd>
-            <InvoiceAdd>
-                <CustomerRef>
-                    <FullName>Kunal Kk</FullName>
-                </CustomerRef>
-                <ClassRef>
-                    <FullName>Corinth</FullName>
-                </ClassRef>
-                <TxnDate>2017-08-16</TxnDate>
-                <RefNumber>26071</RefNumber>
-                <BillAddress>
-                    <Addr1>3250 S. I-35E</Addr1>
-                    <City>Corinth</City>
-                    <State>TX</State>
-                    <PostalCode>76210</PostalCode>
-                    <Country>USA</Country>
-                </BillAddress>
-                <PONumber>401754</PONumber>
-                <ItemSalesTaxRef>
-                    <FullName>Texas State</FullName>
-                </ItemSalesTaxRef>
-                <Memo>zzz</Memo>
-                <InvoiceLineAdd>
-                    <ItemRef>
-                        <FullName>LONGVIEW-WHSE:424202S</FullName>
-                    </ItemRef>
-                    <Desc>424202S - PRINCE CASTLE KIT MAIN PCB ASSY</Desc>
-                    <Quantity>21.00</Quantity>
-                    <Rate>21.00</Rate>
-                </InvoiceLineAdd>
-                <InvoiceLineAdd>
-                    <ItemRef>
-                        <FullName>4WT46</FullName>
-                    </ItemRef>
-                    <Desc>AXIAL FAN</Desc>
-                    <Quantity>1</Quantity>
-                    <Rate>60.20</Rate>
-                </InvoiceLineAdd>
-                <InvoiceLineAdd>
-                    <ItemRef>
-                        <FullName>BVA703-963D-03</FullName>
-                    </ItemRef>
-                    <Desc>BEVERAGE AIR DOOR GASKET</Desc>
-                    <Quantity>1</Quantity>
-                    <Rate>4.20</Rate>
-                </InvoiceLineAdd>
-                <InvoiceLineAdd>
-                    <ItemRef>
-                        <FullName>T7340H</FullName>
-                    </ItemRef>
-                    <Desc>TSTAT</Desc>
-                    <Quantity>1</Quantity>
-                    <Rate>4.20</Rate>
-                </InvoiceLineAdd>
-                <InvoiceLineAdd>
-                    <ItemRef>
-                        <FullName>Plmb.</FullName>
-                    </ItemRef>
-                    <Desc>misc. plumbing material</Desc>
-                    <Quantity>1</Quantity>
-                    <Rate>4.20</Rate>
-                </InvoiceLineAdd>
-                <InvoiceLineAdd>
-                    <ItemRef>
-                        <FullName>TOPS</FullName>
-                    </ItemRef>
-                    <Desc>tops production</Desc>
-                    <Quantity>1</Quantity>
-                    <Rate>12345</Rate>
-                </InvoiceLineAdd>
+
+<ItemRef>
+<FullName>tops</FullName>
+</ItemRef>
+<Desc>software</Desc>
+</InvoiceLineAdd>
             </InvoiceAdd>
         </InvoiceAddRq>
     </QBXMLMsgsRq>
