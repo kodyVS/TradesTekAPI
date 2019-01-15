@@ -8,12 +8,11 @@
                     <FullName>juan castellon</FullName>
                 </CustomerRef>
                 <InvoiceLineAdd>
-
-<ItemRef>
-<FullName>tops</FullName>
-</ItemRef>
-<Desc>software</Desc>
-</InvoiceLineAdd>
+                    <ItemRef>
+                        <FullName>tops</FullName>
+                    </ItemRef>
+                    <Desc>software</Desc>
+                </InvoiceLineAdd>
             </InvoiceAdd>
         </InvoiceAddRq>
     </QBXMLMsgsRq>
