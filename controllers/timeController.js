@@ -11,10 +11,11 @@ const convert = data2xml({
     '<?xml version="1.0" encoding="utf-8"?>\n<?qbxml version="13.0"?>\n',
 });
 
+//Time in function
 exports.timeIn = catchAsync(async (req, res, next) => {
-  //Creating Data Clones
-  let newTime = { ...req.body };
-  //todo Create a request to store on the Model
+ 
+  let timeData = { ...req.body };
+ //! This code will be removed
   // Qbxml = convert("QBXML", {
   //   QBXMLMsgsRq: {
   //     _attr: { onError: "stopOnError" },
@@ -23,13 +24,21 @@ exports.timeIn = catchAsync(async (req, res, next) => {
   // });
 
   //adding request to the Model and creating a new Job in Mongo
-  //newTime.QBRequest = Qbxml;
+  //timeData.QBRequest = Qbxml;
+  
   let doc;
-  await Employee.findById(newTime.EmployeeReference).then(async (response) => {
+  
+  //todo Reduce to a single find and save function
+  //Find an employee and find if the employee already timed in
+  await Employee.findById(timeData.EmployeeReference).then(async (response) => {
     if (response.TimedIn) {
       doc = "User is already timed in";
     } else {
-      doc = await TimeModel.create(newTime).then(async (response) => {
+
+      //create a time model with the time data
+      doc = await TimeModel.create(timeData).then(async (response) => {
+        
+        //After the time model is created store as a reference on the employee
         await Employee.findByIdAndUpdate(
           response.EmployeeReference,
           {
@@ -51,6 +60,7 @@ exports.timeIn = catchAsync(async (req, res, next) => {
   next();
 });
 
+//Function for timing out
 exports.timeOut = catchAsync(async (req, res, next) => {
   let timeReference;
   let timeData = { ...req.body };
@@ -59,8 +69,11 @@ exports.timeOut = catchAsync(async (req, res, next) => {
   let timeIn;
   let timeOut = timeData.TimeData;
   let quantity;
+  //find an employee and check if the employee is timed in
   await Employee.findById(timeData.EmployeeReference).then(async (employee) => {
-    //If user is not timed in turn that message
+    
+    //todo Error handle
+    //If user is not timed in, send a message 
     if (!employee.TimedIn) {
       doc = "User is not timed in";
     } else {
@@ -87,13 +100,15 @@ exports.timeOut = catchAsync(async (req, res, next) => {
         if (quantity > 24 * 60) {
           quantity = 24 * 60;
         }
-
+        //set the data to be stored on the timeStamp
         timeStamp.TimeData.push(timeOut);
         console.log(quantity);
         timeStamp.Quantity = quantity;
         timeStamp.Desc = timeData.Desc;
         timeStamp.save();
       });
+
+      //Store the time reference on the work order, and add the time to the total time on the request
       await WorkOrder.findByIdAndUpdate(
         WOReference,
         {
