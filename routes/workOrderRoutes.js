@@ -2,6 +2,7 @@ const express = require("express");
 const workOrderController = require("../controllers/workOrderController");
 const router = express.Router();
 
+router.route("/allActive").get(workOrderController.getAllActiveWorkOrders);
 router.route("/all").get(workOrderController.getAllWorkOrders);
 router.route("/:id").get(workOrderController.getOneWorkOrder);
 router.route("/complete").post(workOrderController.completeWorkOrder);

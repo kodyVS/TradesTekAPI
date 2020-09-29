@@ -59,14 +59,15 @@ exports.editJob = catchAsync(async (req, res, next) => {
       QBXMLMsgsRq: {
         _attr: { onError: "stopOnError" },
         CustomerAddRq: {
-          Name: editedJob.Name,
-          ParentRef: editedJob.ParentRef,
-          FirstName: editedJob.FirstName,
-          LastName: editedJob.LastName,
-          BillAddress: editedJob.BillAddress,
-          Phone: editedJob.Phone,
-          Email: editedJob.Email,
-          Synced: editedJob.Synced,
+          CustomerAdd: {
+            Name: newJob.Name,
+            ParentRef: newJob.ParentRef,
+            FirstName: newJob.FirstName,
+            LastName: newJob.LastName,
+            BillAddress: newJob.BillAddress,
+            Phone: newJob.Phone,
+            Email: newJob.Email,
+          },
         },
       },
     });
@@ -127,13 +128,15 @@ exports.deleteJob = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllJobs = catchAsync(async (req, res, next) => {
-  await Job.find({}).then((data) => {
-    res.status(200).json({
-      status: "success",
-      data,
+  await Job.find({})
+    .sort({ "ParentRef.FullName": 1 })
+    .then((data) => {
+      res.status(200).json({
+        status: "success",
+        data,
+      });
+      next();
     });
-    next();
-  });
 });
 
 exports.getOneJob = catchAsync(async (req, res, next) => {

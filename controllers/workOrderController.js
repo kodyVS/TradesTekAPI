@@ -69,42 +69,7 @@ exports.editWorkOrder = catchAsync(async (req, res, next) => {
       new: true,
     }
   );
-  //Format xml
-  let qbxml;
-  // //Creating a request to store on the Model if there is a ListID on the request
-  // if (!req.body.ListID) {
-  //   qbxml = convert("QBXML", {
-  //     QBXMLMsgsRq: {
-  //       _attr: { onError: "stopOnError" },
 
-  //       //todo add work order quickbooks info
-  //       //
-  //     },
-  //   });
-  // } else {
-  //   qbxml = convert("QBXML", {
-  //     QBXMLMsgsRq: {
-  //       _attr: { onError: "stopOnError" },
-
-  //       //todo add work order quickbooks info
-  //       //
-  //     },
-  //   });
-  // }
-  //Store Request on the model
-  let doc = await WorkOrder.findOneAndUpdate(
-    { FullName: editedWorkOrder.FullName },
-    {
-      QBRequest: qbxml,
-      Synced: false,
-    },
-    {
-      new: true,
-    }
-  );
-  if (!doc) {
-    return next(new AppError("No document found with that ID", 404));
-  }
   res.status(201).json({
     status: "success",
     data: {
@@ -130,61 +95,88 @@ exports.deleteWorkOrder = catchAsync(async (req, res, next) => {
 
 exports.completeWorkOrder = catchAsync(async (req, res, next) => {
   let workOrder = req.body;
-  let ConstructionLineRet;
+  let InvoiceLineAdd = [];
+  let totalTime = 0;
   await WorkOrder.findById(workOrder.WorkOrderID)
     .populate("TimeReference")
-    .then((filledWO) => {
+    .populate("Job")
+    .then(async (filledWO) => {
       if (filledWO.JobType === "Construction") {
-        let totalTime = 0;
         filledWO.TimeReference.map((timeStamp) => {
           totalTime = totalTime + timeStamp.Quantity;
         });
+        totalTime = Math.round((totalTime / 60 + Number.EPSILON) * 100) / 100;
+        InvoiceLineAdd = {
+          ItemRef: {
+            ListID: "80000008-1597162251",
+            FullName: "Hourly Rate",
+          },
+          Desc: filledWO.Name,
+          Quantity: totalTime,
+          ClassRef: { FullName: "Construction" },
+          SalesTaxCodeRef: { ListID: "80000001-1597162222", FullName: "G" },
+        };
+      }
+      // ? This is where I will add service requests
+      if (filledWO.JobType === "Service") {
+        filledWO.TimeReference.map((timeStamp) => {
+          totalTime =
+            Math.round((timeStamp.Quantity / 60 + Number.EPSILON) * 100) / 100;
+          InvoiceLineAdd.push({
+            ItemRef: {
+              ListID: "80000008-1597162251",
+              FullName: "Hourly Rate",
+            },
+            Desc: timeStamp.Desc,
+            Quantity: totalTime,
+            ClassRef: { FullName: "Service" },
+            SalesTaxCodeRef: { ListID: "80000001-1597162222", FullName: "G" },
+          });
+        });
       }
 
-      //       let Qbxml;
-      //     //Creating a request to store on the Model if there is a ListID on the request
-      //        Qbxml = convert("QBXML", {
-      //   QBXMLMsgsRq: {
-      //     _attr: { onError: "stopOnError" },
-      //     InvoiceAddRq: {
-      //       InvoiceAdd: {
-      //         CustomerRef: {
-      //           FullName: filledWO.JobName,
-      //         },
-      //         ClassRef: {
-      //           FullName: filledWO.JobType,
-      //         },
-      //         PONumber: filledWO.PONumber,
-      //         InvoiceLineAdd: {
-
-      //         },
-      //       },
-      //     },
-      //   },
-      // });
-      //       //Store Request on the model
-      //       let doc = await WorkOrder.findOneAndUpdate(
-      //         { FullName: editedWorkOrder.FullName },
-      //         {
-      //           QBRequest: qbxml,
-      //           Synced: false,
-      //         },
-      //         {
-      //           new: true,
-      //         }
-      //     )
+      let qbxml;
+      //Creating a request to store on the Model if there is a ListID on the request
+      qbxml = convert("QBXML", {
+        QBXMLMsgsRq: {
+          _attr: { onError: "stopOnError" },
+          InvoiceAddRq: {
+            InvoiceAdd: {
+              CustomerRef: {
+                FullName: filledWO.Job.FullName,
+              },
+              ClassRef: {
+                FullName: filledWO.JobType,
+              },
+              PONumber: filledWO.PONumber,
+              InvoiceLineAdd: InvoiceLineAdd,
+            },
+          },
+        },
+      });
+      //Store Request on the model
+      (filledWO.QBRequest = qbxml), (filledWO.Synced = false), filledWO.save();
+      //Send a Success message
+      res.status(201).json({
+        status: "success",
+        data: "completed",
+      });
+      next();
     });
-  res.status(201).json({
-    status: "success",
-    data: "completed",
-  });
-  next();
+  // .catch((err) => {
+  //   res.status(400).json({
+  //     status: "error",
+  //     data: err,
+  //   });
+  //   next();
+  // });
 });
 
 //todo add filters to only get x amount of work orders or work orders after x date. Otherwise this will be a huge request
 exports.getAllWorkOrders = catchAsync(async (req, res, next) => {
   await WorkOrder.find({})
     .select("-TimeReference")
+    .sort({ PONumber: -1 })
     .populate("Job")
     .then((data) => {
       res.status(200).json({
@@ -208,4 +200,18 @@ exports.getOneWorkOrder = catchAsync(async (req, res, next) => {
       data: doc,
     },
   });
+});
+
+exports.getAllActiveWorkOrders = catchAsync(async (req, res, next) => {
+  await WorkOrder.find({ Complete: false })
+    .select("-TimeReference")
+    .sort({ PONumber: -1 })
+    .populate("Job")
+    .then((data) => {
+      res.status(200).json({
+        status: "success",
+        data,
+      });
+      next();
+    });
 });

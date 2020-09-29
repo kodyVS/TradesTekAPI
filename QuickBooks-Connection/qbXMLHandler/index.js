@@ -133,8 +133,8 @@ async function buildRequests(callback) {
 
     // Pushes found models that have have the the synced property equalling false
     //todo check to see if the file has a QBRequest string longer than 0 to prevent errors
-    updatedData.push(...jobData);
     updatedData.push(...customerData);
+    updatedData.push(...jobData);
     updatedData.push(...workOrderData);
 
     let requests = [];
@@ -146,15 +146,15 @@ async function buildRequests(callback) {
     });
 
     // Adding a CustomerQuery on every sync to check for updates on quickbooks after our data is synced
-    requests.push(
-      '<?xml version="1.0" encoding="utf-8"?><?qbxml version="13.0"?><QBXML><QBXMLMsgsRq onError="stopOnError"><CustomerQueryRq></CustomerQueryRq></QBXMLMsgsRq></QBXML>',
+    requests.push();
+    '<?xml version="1.0" encoding="utf-8"?><?qbxml version="13.0"?><QBXML><QBXMLMsgsRq onError="stopOnError"><CustomerQueryRq></CustomerQueryRq></QBXMLMsgsRq></QBXML>',
       '<?xml version="1.0" encoding="utf-8"?><?qbxml version="13.0"?><QBXML><QBXMLMsgsRq onError="stopOnError"><EmployeeQueryRq></EmployeeQueryRq></QBXMLMsgsRq></QBXML>',
-      `<?xml version="1.0" encoding="utf-8"?><?qbxml version="13.0"?><QBXML><QBXMLMsgsRq onError="stopOnError"><InvoiceQueryRq><ModifiedDateRangeFilter><FromModifiedDate>${modifiedDate}</FromModifiedDate></ModifiedDateRangeFilter><IncludeLineItems>true</IncludeLineItems></InvoiceQueryRq></QBXMLMsgsRq></QBXML>`
-    );
+      //   `<?xml version="1.0" encoding="utf-8"?><?qbxml version="13.0"?><QBXML><QBXMLMsgsRq onError="stopOnError"><InvoiceQueryRq><ModifiedDateRangeFilter><FromModifiedDate>${modifiedDate}</FromModifiedDate></ModifiedDateRangeFilter><IncludeLineItems>true</IncludeLineItems></InvoiceQueryRq></QBXMLMsgsRq></QBXML>`
+      // );
 
-    //Currently logging the requests to console
-    //todo Should make this a production versus development variable
-    console.log(requests);
+      //Currently logging the requests to console
+      //todo Should make this a production versus development variable
+      console.log(requests);
 
     return await callback(null, requests);
   } catch (err) {
