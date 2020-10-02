@@ -32,5 +32,6 @@ const employeeSchema = new mongoose.Schema({
   WOReference: { type: mongoose.Schema.Types.ObjectId, ref: "WorkOrder" },
 });
 
+//! Change Employees to Employee
 const Employee = mongoose.model("Employees", employeeSchema);
 module.exports = Employee;

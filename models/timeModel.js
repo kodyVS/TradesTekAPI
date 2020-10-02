@@ -3,8 +3,11 @@ const validator = require("validator");
 
 const timeSchema = new mongoose.Schema({
   TxnLineID: String,
+  WorkOrder: String,
+  PONumber: Number,
   WOReference: { type: mongoose.Schema.Types.ObjectId, ref: "WorkOrder" },
-  EmployeeReference: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
+  Employee: String,
+  EmployeeReference: { type: mongoose.Schema.Types.ObjectId, ref: "Employees" },
   TimeData: [],
   ItemRef: {
     ListID: String,

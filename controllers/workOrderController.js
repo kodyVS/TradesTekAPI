@@ -172,7 +172,31 @@ exports.completeWorkOrder = catchAsync(async (req, res, next) => {
   // });
 });
 
-//todo add filters to only get x amount of work orders or work orders after x date. Otherwise this will be a huge request
+//todo Remove the double data nest
+exports.getOneWorkOrder = catchAsync(async (req, res, next) => {
+  await WorkOrder.findById(req.params.id)
+    .populate({
+      path: "TimeReference",
+      populate: {
+        path: "EmployeeReference",
+        select: "Name",
+      },
+    })
+    .populate("Job")
+    .then((doc) => {
+      if (!doc) {
+        return next(new AppError("No document found with that ID", 404));
+      }
+      res.status(200).json({
+        status: "success",
+        data: {
+          data: doc,
+        },
+      });
+    });
+});
+
+//todo Should combine these functions and use params to get workOrders
 exports.getAllWorkOrders = catchAsync(async (req, res, next) => {
   await WorkOrder.find({})
     .select("-TimeReference")
@@ -185,21 +209,6 @@ exports.getAllWorkOrders = catchAsync(async (req, res, next) => {
       });
       next();
     });
-});
-
-exports.getOneWorkOrder = catchAsync(async (req, res, next) => {
-  let doc = await WorkOrder.findById(req.params.id);
-
-  if (!doc) {
-    return next(new AppError("No document found with that ID", 404));
-  }
-  WorkOrder.set("CreateRequest", undefined, { strict: false });
-  res.status(200).json({
-    status: "success",
-    data: {
-      data: doc,
-    },
-  });
 });
 
 exports.getAllActiveWorkOrders = catchAsync(async (req, res, next) => {

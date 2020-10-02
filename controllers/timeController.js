@@ -6,6 +6,7 @@ const Employee = require("../models/employeeModel");
 const AppError = require("../utils/appError");
 const mongoose = require("mongoose");
 const data2xml = require("data2xml");
+const Time = require("../models/timeModel");
 const convert = data2xml({
   xmlHeader:
     '<?xml version="1.0" encoding="utf-8"?>\n<?qbxml version="13.0"?>\n',
@@ -13,31 +14,18 @@ const convert = data2xml({
 
 //Time in function
 exports.timeIn = catchAsync(async (req, res, next) => {
- 
   let timeData = { ...req.body };
- //! This code will be removed
-  // Qbxml = convert("QBXML", {
-  //   QBXMLMsgsRq: {
-  //     _attr: { onError: "stopOnError" },
-  //     },
-  //   },
-  // });
 
-  //adding request to the Model and creating a new Job in Mongo
-  //timeData.QBRequest = Qbxml;
-  
   let doc;
-  
+
   //todo Reduce to a single find and save function
   //Find an employee and find if the employee already timed in
   await Employee.findById(timeData.EmployeeReference).then(async (response) => {
     if (response.TimedIn) {
       doc = "User is already timed in";
     } else {
-
       //create a time model with the time data
       doc = await TimeModel.create(timeData).then(async (response) => {
-        
         //After the time model is created store as a reference on the employee
         await Employee.findByIdAndUpdate(
           response.EmployeeReference,
@@ -45,6 +33,9 @@ exports.timeIn = catchAsync(async (req, res, next) => {
             TimedIn: true,
             TimeReference: response._id,
             WOReference: response.WOReference,
+            Employee: response.Employee,
+            WorkOrder: response.WorkOrder,
+            PONumber: response.PONumber,
           },
           { new: true }
         );
@@ -71,9 +62,8 @@ exports.timeOut = catchAsync(async (req, res, next) => {
   let quantity;
   //find an employee and check if the employee is timed in
   await Employee.findById(timeData.EmployeeReference).then(async (employee) => {
-    
     //todo Error handle
-    //If user is not timed in, send a message 
+    //If user is not timed in, send a message
     if (!employee.TimedIn) {
       doc = "User is not timed in";
     } else {
@@ -129,8 +119,85 @@ exports.timeOut = catchAsync(async (req, res, next) => {
   next();
 });
 
-exports.timeEdit = catchAsync(async (req, res, next) => {
-  timeData = { ...req.body };
-  console.log(timeData.Desc);
+exports.editTime = catchAsync(async (req, res, next) => {
+  let timeData = { ...req.body };
+  date1 = new Date(timeData.TimeData[0]);
+  date2 = new Date(timeData.TimeData[1]);
+  let diff = (date2.getTime() - date1.getTime()) / 1000;
+  diff /= 60;
+  quantity = Math.abs(Math.round(diff));
+  if (quantity <= 0) {
+    quantity = 1;
+  }
+  timeData.Quantity = quantity;
+  await Time.findByIdAndUpdate(timeData._id, timeData, { new: true }).then(
+    () => {
+      res.status(201).json({
+        status: "success",
+      });
+    }
+  );
 });
+
+exports.deleteTime = catchAsync(async (req, res, next) => {
+  console.log(req.params.id);
+  await Time.findByIdAndDelete(req.params.id).then(() => {
+    res.status(204).json({
+      status: "success",
+      data: { status: "Deleted" },
+    });
+  });
+
+  next();
+});
+
 //Returning data to Front-End
+exports.getAllTimes = catchAsync(async (req, res, next) => {
+  let doc = await Time.find({ Employee: req.query.filter });
+  res.status(201).json({
+    status: "success",
+    data: doc,
+  });
+  next();
+});
+
+exports.addTime = catchAsync(async (req, res, next) => {
+  let newTime = { ...req.body };
+  let quantity;
+  let timeIn = newTime.TimeData[0];
+  let timeOut = newTime.TimeData[1];
+  //Total Hours work being stored on request
+  let date1 = new Date(timeIn);
+  let date2 = new Date(timeOut);
+  let diff = (date2.getTime() - date1.getTime()) / 1000;
+  diff /= 60;
+  quantity = Math.abs(Math.round(diff));
+  if (quantity === 0) {
+    quantity = 1;
+  }
+
+  //todo Make the timeout request automatically only 24 hours max away from the time in.
+  if (quantity > 24 * 60) {
+    quantity = 24 * 60;
+  }
+
+  newTime.Quantity = quantity;
+  console.log(newTime);
+  await Time.create(newTime).then(async (doc) => {
+    console.log(doc);
+    await WorkOrder.findByIdAndUpdate(
+      newTime.WOReference,
+      {
+        $inc: { TotalMinutes: quantity },
+        $push: { TimeReference: doc._id },
+      },
+      { new: true }
+    );
+    res.status(201).json({
+      status: "success",
+      data: doc,
+    });
+  });
+
+  next();
+});
