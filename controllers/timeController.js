@@ -25,6 +25,7 @@ exports.timeIn = catchAsync(async (req, res, next) => {
       doc = "User is already timed in";
     } else {
       //create a time model with the time data
+      timeData.TimeData = new Date(timeData.TimeData);
       doc = await TimeModel.create(timeData).then(async (response) => {
         //After the time model is created store as a reference on the employee
         await Employee.findByIdAndUpdate(
@@ -33,9 +34,7 @@ exports.timeIn = catchAsync(async (req, res, next) => {
             TimedIn: true,
             TimeReference: response._id,
             WOReference: response.WOReference,
-            Employee: response.Employee,
             WorkOrder: response.WorkOrder,
-            PONumber: response.PONumber,
           },
           { new: true }
         );
@@ -75,9 +74,8 @@ exports.timeOut = catchAsync(async (req, res, next) => {
       employee.save();
       await TimeModel.findById(timeReference).then((timeStamp) => {
         timeIn = timeStamp.TimeData[0];
-
         //Total Hours work being stored on request
-        date1 = new Date(timeIn);
+        date1 = timeIn;
         date2 = new Date(timeOut);
         let diff = (date2.getTime() - date1.getTime()) / 1000;
         diff /= 60;
@@ -91,7 +89,7 @@ exports.timeOut = catchAsync(async (req, res, next) => {
           quantity = 24 * 60;
         }
         //set the data to be stored on the timeStamp
-        timeStamp.TimeData.push(timeOut);
+        timeStamp.TimeData.push(date2);
         console.log(quantity);
         timeStamp.Quantity = quantity;
         timeStamp.Desc = timeData.Desc;
@@ -121,9 +119,10 @@ exports.timeOut = catchAsync(async (req, res, next) => {
 
 exports.editTime = catchAsync(async (req, res, next) => {
   let timeData = { ...req.body };
-  date1 = new Date(timeData.TimeData[0]);
-  date2 = new Date(timeData.TimeData[1]);
-  let diff = (date2.getTime() - date1.getTime()) / 1000;
+  timeData.TimeData[0] = new Date(timeData.TimeData[0]);
+  timeData.TimeData[1] = new Date(timeData.TimeData[1]);
+  let diff =
+    (timeData.TimeData[0].getTime() - timeData.TimeData[1].getTime()) / 1000;
   diff /= 60;
   quantity = Math.abs(Math.round(diff));
   if (quantity <= 0) {
@@ -139,43 +138,20 @@ exports.editTime = catchAsync(async (req, res, next) => {
   );
 });
 
-exports.deleteTime = catchAsync(async (req, res, next) => {
-  console.log(req.params.id);
-  await Time.findByIdAndDelete(req.params.id).then(() => {
-    res.status(204).json({
-      status: "success",
-      data: { status: "Deleted" },
-    });
-  });
-
-  next();
-});
-
-//Returning data to Front-End
-exports.getAllTimes = catchAsync(async (req, res, next) => {
-  let doc = await Time.find({ Employee: req.query.filter });
-  res.status(201).json({
-    status: "success",
-    data: doc,
-  });
-  next();
-});
-
 exports.addTime = catchAsync(async (req, res, next) => {
   let newTime = { ...req.body };
   let quantity;
-  let timeIn = newTime.TimeData[0];
-  let timeOut = newTime.TimeData[1];
+  newTime.TimeData[0] = new Date(newTime.TimeData[0]);
+  newTime.TimeData[1] = new Date(newTime.TimeData[1]);
+
   //Total Hours work being stored on request
-  let date1 = new Date(timeIn);
-  let date2 = new Date(timeOut);
-  let diff = (date2.getTime() - date1.getTime()) / 1000;
+  let diff =
+    (newTime.TimeData[0].getTime() - newTime.TimeData[1].getTime()) / 1000;
   diff /= 60;
   quantity = Math.abs(Math.round(diff));
   if (quantity === 0) {
     quantity = 1;
   }
-
   //todo Make the timeout request automatically only 24 hours max away from the time in.
   if (quantity > 24 * 60) {
     quantity = 24 * 60;
@@ -199,5 +175,34 @@ exports.addTime = catchAsync(async (req, res, next) => {
     });
   });
 
+  next();
+});
+
+exports.deleteTime = catchAsync(async (req, res, next) => {
+  console.log(req.params.id);
+  await Time.findByIdAndDelete(req.params.id).then(() => {
+    res.status(204).json({
+      status: "success",
+      data: { status: "Deleted" },
+    });
+  });
+
+  next();
+});
+
+//Returning data to Front-End
+exports.getAllTimes = catchAsync(async (req, res, next) => {
+  console.log(req.query);
+  let doc = await Time.find({
+    Employee: req.query.filter,
+    TimeData: {
+      $gte: new Date(req.query.lowRange),
+      $lte: new Date(req.query.highRange),
+    },
+  });
+  res.status(201).json({
+    status: "success",
+    data: doc,
+  });
   next();
 });
