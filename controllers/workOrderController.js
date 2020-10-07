@@ -4,6 +4,7 @@ const WorkOrder = require("../models/workOrderModel");
 const Counter = require("../models/counterModel");
 const AppError = require("../utils/appError");
 const data2xml = require("data2xml");
+const Time = require("../models/timeModel");
 const convert = data2xml({
   xmlHeader:
     '<?xml version="1.0" encoding="utf-8"?>\n<?qbxml version="13.0"?>\n',
@@ -154,22 +155,26 @@ exports.completeWorkOrder = catchAsync(async (req, res, next) => {
           },
         },
       });
+
+      await Time.updateMany(
+        { WOReference: filledWO._id },
+        { Completed: true }
+      ).then((res) => {
+        console.log(res);
+      });
+
       //Store Request on the model
-      (filledWO.QBRequest = qbxml), (filledWO.Synced = false), filledWO.save();
+      filledWO.QBRequest = qbxml;
+      filledWO.Synced = false;
+      filledWO.save();
       //Send a Success message
+
       res.status(201).json({
         status: "success",
         data: "completed",
       });
       next();
     });
-  // .catch((err) => {
-  //   res.status(400).json({
-  //     status: "error",
-  //     data: err,
-  //   });
-  //   next();
-  // });
 });
 
 //todo Remove the double data nest

@@ -190,14 +190,18 @@ exports.deleteTime = catchAsync(async (req, res, next) => {
   next();
 });
 
-//Returning data to Front-End
 exports.getAllTimes = catchAsync(async (req, res, next) => {
   console.log(req.query);
+  let lowRange = req.query.lowRange;
+  //lowRange.setHours(0, 0, 0, 0);
+  let highRange = req.query.highRange;
+  //highRange.setHours(0, 0, 0, 0);
+  console.log(lowRange, highRange);
   let doc = await Time.find({
     Employee: req.query.filter,
     TimeData: {
-      $gte: new Date(req.query.lowRange),
-      $lte: new Date(req.query.highRange),
+      $gte: lowRange,
+      $lt: highRange,
     },
   });
   res.status(201).json({

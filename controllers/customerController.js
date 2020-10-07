@@ -41,38 +41,42 @@ exports.addCustomer = catchAsync(async (req, res, next) => {
 
 //Edit Customers
 exports.editCustomer = catchAsync(async (req, res, next) => {
-  let editedCustomer = { ...req.body };
+  let editedCustomer = {
+    ListID: req.body.ListID,
+    EditSequence: req.body.EditSequence,
+    Name: req.body.Name,
+    FullName: req.body.FullName,
+    CompanyName: req.body.CompanyName,
+    FirstName: req.body.FirstName,
+    LastName: req.body.LastName,
+    BillAddress: req.body.BillAddress,
+    Phone: req.body.Phone,
+    Email: req.body.Email,
+  };
 
-  //Update Model with new info
-  await Customer.findOneAndUpdate(
-    { FullName: editedCustomer.FullName },
-    editedCustomer,
-    {
-      new: true,
-    }
-  );
-  //Format JSON to be added to quickbooks and converted into qbxml
-  let QBEditRequest = { ...req.body };
-  delete QBEditRequest.Synced;
-  delete QBEditRequest.FullName;
   let qbxml;
+  let qbxmlBody = { ...editedCustomer };
   //Creating a request to store on the Model if there is a ListID on the request if not create a customer
   //This allows for editting a customer that hasn't been synced with quickbooks yet.
   if (!req.body.ListID) {
+    delete qbxmlBody.ListID;
+    delete qbxmlBody.EditSequence;
+    delete qbxmlBody.FullName;
     qbxml = convert("QBXML", {
       QBXMLMsgsRq: {
         _attr: { onError: "stopOnError" },
         CustomerAddRq: {
-          CustomerAdd: QBEditRequest,
+          CustomerAdd: qbxmlBody,
         },
       },
     });
   } else {
+    delete qbxmlBody.FullName;
     qbxml = convert("QBXML", {
       QBXMLMsgsRq: {
         _attr: { onError: "stopOnError" },
         CustomerModRq: {
-          CustomerMod: QBEditRequest,
+          CustomerMod: qbxmlBody,
         },
       },
     });
@@ -81,6 +85,14 @@ exports.editCustomer = catchAsync(async (req, res, next) => {
   let doc = await Customer.findOneAndUpdate(
     { FullName: editedCustomer.FullName },
     {
+      EditSequence: editedCustomer.EditSequence,
+      Name: editedCustomer.Name,
+      CompanyName: editedCustomer.CompanyName,
+      FirstName: editedCustomer.FirstName,
+      LastName: editedCustomer.LastName,
+      BillAddress: editedCustomer.BillAddress,
+      Phone: editedCustomer.Phone,
+      Email: editedCustomer.Email,
       QBRequest: qbxml,
       Synced: false,
     },
@@ -94,11 +106,8 @@ exports.editCustomer = catchAsync(async (req, res, next) => {
     return next(new AppError("No document found with that ID", 404));
   }
 
-  res.status(201).json({
+  res.status(204).json({
     status: "success",
-    data: {
-      data: "Customer successfully changed",
-    },
   });
   next();
 });

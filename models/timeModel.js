@@ -8,7 +8,7 @@ const timeSchema = new mongoose.Schema({
   WOReference: { type: mongoose.Schema.Types.ObjectId, ref: "WorkOrder" },
   Employee: String,
   EmployeeReference: { type: mongoose.Schema.Types.ObjectId, ref: "Employees" },
-  TimeData: [],
+  TimeData: [Date],
   ItemRef: {
     ListID: String,
     FullName: String,
@@ -16,6 +16,10 @@ const timeSchema = new mongoose.Schema({
   Desc: String,
   Quantity: Number,
   Synced: {
+    type: Boolean,
+    default: false,
+  },
+  Completed: {
     type: Boolean,
     default: false,
   },

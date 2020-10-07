@@ -72,7 +72,7 @@ module.exports = {
       );
     }
     //Log to show all data coming in **Useful**
-    console.log(util.inspect(JSONResponse, { showHidden: false, depth: null }));
+    //console.log(util.inspect(JSONResponse, { showHidden: false, depth: null }));
 
     //Adding data success
     //todo I need to refactor this so that is checks if the data is good first before handling the mongodb items.
@@ -125,7 +125,6 @@ async function buildRequests(callback) {
     let jobData = await JobModel.find({ Synced: false });
     let customerData = await CustomerModel.find({ Synced: false });
     let workOrderData = await WorkOrderModel.find({ Synced: false });
-    console.log(workOrderData);
     let updatedData = [];
     let modifiedDate = new Date();
     modifiedDate.setMonth(modifiedDate.getMonth() - 1);
@@ -134,27 +133,31 @@ async function buildRequests(callback) {
     // Pushes found models that have have the the synced property equalling false
     //todo check to see if the file has a QBRequest string longer than 0 to prevent errors
     updatedData.push(...customerData);
-    updatedData.push(...jobData);
-    updatedData.push(...workOrderData);
+    //updatedData.push(...jobData);
+    //updatedData.push(...workOrderData);
 
     let requests = [];
     // Map through the updated data and creates a request array out of the requests stored on the model
 
     //? **Does this function need to be an async function?**
     await updatedData.map((object) => {
-      requests.push(object.QBRequest);
+      if (object.QBRequest) {
+        requests.push(object.QBRequest);
+      }
     });
 
     // Adding a CustomerQuery on every sync to check for updates on quickbooks after our data is synced
-    requests.push();
-    '<?xml version="1.0" encoding="utf-8"?><?qbxml version="13.0"?><QBXML><QBXMLMsgsRq onError="stopOnError"><CustomerQueryRq></CustomerQueryRq></QBXMLMsgsRq></QBXML>',
-      '<?xml version="1.0" encoding="utf-8"?><?qbxml version="13.0"?><QBXML><QBXMLMsgsRq onError="stopOnError"><EmployeeQueryRq></EmployeeQueryRq></QBXMLMsgsRq></QBXML>',
-      //   `<?xml version="1.0" encoding="utf-8"?><?qbxml version="13.0"?><QBXML><QBXMLMsgsRq onError="stopOnError"><InvoiceQueryRq><ModifiedDateRangeFilter><FromModifiedDate>${modifiedDate}</FromModifiedDate></ModifiedDateRangeFilter><IncludeLineItems>true</IncludeLineItems></InvoiceQueryRq></QBXMLMsgsRq></QBXML>`
-      // );
+    requests.push(
+      '<?xml version="1.0" encoding="utf-8"?><?qbxml version="13.0"?><QBXML><QBXMLMsgsRq onError="stopOnError"><CustomerQueryRq></CustomerQueryRq></QBXMLMsgsRq></QBXML>',
+      '<?xml version="1.0" encoding="utf-8"?><?qbxml version="13.0"?><QBXML><QBXMLMsgsRq onError="stopOnError"><EmployeeQueryRq></EmployeeQueryRq></QBXMLMsgsRq></QBXML>'
+    );
 
-      //Currently logging the requests to console
-      //todo Should make this a production versus development variable
-      console.log(requests);
+    //   `<?xml version="1.0" encoding="utf-8"?><?qbxml version="13.0"?><QBXML><QBXMLMsgsRq onError="stopOnError"><InvoiceQueryRq><ModifiedDateRangeFilter><FromModifiedDate>${modifiedDate}</FromModifiedDate></ModifiedDateRangeFilter><IncludeLineItems>true</IncludeLineItems></InvoiceQueryRq></QBXMLMsgsRq></QBXML>`
+    // );
+
+    //Currently logging the requests to console
+    //todo Should make this a production versus development variable
+    console.log(requests);
 
     return await callback(null, requests);
   } catch (err) {

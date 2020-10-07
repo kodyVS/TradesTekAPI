@@ -1,4 +1,7 @@
+//! remove mongo-memory-server
+
 const mongoose = require("mongoose");
+const { MongoMemoryServer } = require("mongodb-memory-server");
 const dotenv = require("dotenv").config();
 const express = require("express");
 const workOrderRoutes = require("./Routes/workOrderRoutes");
@@ -6,6 +9,7 @@ const timeRoutes = require("./Routes/timeRoutes");
 const customerRoutes = require("./Routes/customerRoutes");
 const jobRoutes = require("./Routes/jobRoutes");
 const employeeRoutes = require("./Routes/employeeRoutes");
+const testRoutes = require("./Routes/testRoutes");
 const app = express();
 const cors = require("cors");
 //Error catching on uncaughtException
@@ -28,6 +32,7 @@ app.use("/api/v1/job", jobRoutes);
 app.use("/api/v1/employee", employeeRoutes);
 app.use("/api/v1/workOrder", workOrderRoutes);
 app.use("/api/v1/time", timeRoutes);
+app.use("/api/v1/test", testRoutes);
 
 //starting SOAP Server
 var Server = require("quickbooks-js");
@@ -37,26 +42,42 @@ soapServer.setQBXMLHandler(qbXMLHandler);
 soapServer.run();
 
 //Setting up MongoDb server with mongoose
-const DB = process.env.DATABASE.replace(
-  "<PASSWORD>",
-  process.env.DATABASE_PASSWORD
-);
+if (process.env.TEST === "true") {
+  const DB = process.env.TEST_DATABASE.replace(
+    "<PASSWORD>",
+    process.env.TEST_DATABASE_PASSWORD
+  );
 
-mongoose
-  .connect(DB, {
-    useNewUrlParser: true,
-    useCreateIndex: true,
-    useFindAndModify: false,
-  })
-  .then(() => console.log("DB connection successful!"));
+  mongoose
+    .connect(DB, {
+      useNewUrlParser: true,
+      useCreateIndex: true,
+      useFindAndModify: false,
+    })
+    .then(() => console.log("DB connection successful!"));
+} else {
+  const DB = process.env.DATABASE.replace(
+    "<PASSWORD>",
+    process.env.DATABASE_PASSWORD
+  );
+
+  mongoose
+    .connect(DB, {
+      useNewUrlParser: true,
+      useCreateIndex: true,
+      useFindAndModify: false,
+    })
+    .then(() => console.log("DB connection successful!"));
+}
 
 // Starting server
 const port = process.env.PORT || 3000;
 const server = app.listen(port, () => {
   console.log(`App running on port ${port}...`);
 });
+module.exports = server;
 
-//Logging errors and temrinating program
+// Logging errors and temrinating program
 process.on("unhandledRejection", (err) => {
   console.log("UNHANDLED REJECTION! 💥 Shutting down...");
   console.log(err.name, err.message);
