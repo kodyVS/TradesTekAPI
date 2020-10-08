@@ -15,19 +15,25 @@ router.route("/all").get(async (req, res, next) => {
 router.route("/add").post(
   catchAsync(async (req, res, next) => {
     console.log(req.body);
-    try {
-      await Test.create(req.body).then((data) => {
-        res.status(201).json({
-          status: "success",
-          data,
-        });
-        next();
+    await Test.create(req.body).then((data) => {
+      res.status(201).json({
+        status: "success",
+        data,
       });
-    } catch (err) {
-      console.log(err);
       next();
-    }
+    });
   })
 );
+// router.route("/getAll").get(
+//   catchAsync(async (req, res, next) => {
+//     await Test.find().then((data) => {
+//       res.status(201).json({
+//         status: "success",
+//         data,
+//       });
+//       next();
+//     });
+//   })
+// );
 
 module.exports = router;

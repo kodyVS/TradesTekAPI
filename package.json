@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha || exit 0"
+    "test": "mocha || exit 0",
+    "serve": "nodemon server.js",
+    "serve:test": "SET TEST=on&nodemon server.js"
   },
   "author": "",
   "license": "ISC",

@@ -17,40 +17,46 @@ exports.timeIn = catchAsync(async (req, res, next) => {
   let timeData = { ...req.body };
 
   let doc;
-
-  //todo Reduce to a single find and save function
   //Find an employee and find if the employee already timed in
-  await Employee.findById(timeData.EmployeeReference).then(async (response) => {
-    if (response.TimedIn) {
-      doc = "User is already timed in";
-    } else {
-      //create a time model with the time data
-      timeData.TimeData = new Date(timeData.TimeData);
-      doc = await TimeModel.create(timeData).then(async (response) => {
-        //After the time model is created store as a reference on the employee
-        await Employee.findByIdAndUpdate(
-          response.EmployeeReference,
-          {
-            TimedIn: true,
-            TimeReference: response._id,
-            WOReference: response.WOReference,
-            WorkOrder: response.WorkOrder,
-          },
-          { new: true }
-        );
+  let employee = await Employee.findById(timeData.EmployeeReference).then(
+    async (response) => {
+      if (response.TimedIn) {
+        doc = "User is already timed in";
+      } else {
+        //create a time model with the time data
+        timeData.TimeData = new Date(timeData.TimeData);
+        doc = await TimeModel.create(timeData).then(async (response) => {
+          //After the time model is created store as a reference on the employee
+          await Employee.findByIdAndUpdate(
+            response.EmployeeReference,
+            {
+              TimedIn: true,
+              TimeReference: response._id,
+              WOReference: response.WOReference,
+              WorkOrder: response.WorkOrder,
+            },
+            { new: true }
+          );
+        });
+      }
+
+      res.status(201).json({
+        status: "success",
+        data: {
+          doc,
+        },
       });
     }
-  });
-  res.status(201).json({
-    status: "success",
-    data: {
-      doc,
-    },
-  });
-  next();
+  );
+  //send an error if the employee doesn't have an ID
+  console.log(employee);
+  // if (!employee) {
+  //   return next(new AppError("No Employee found with that ID", 404));
+  // }
 });
 
 //Function for timing out
+//todo error handle
 exports.timeOut = catchAsync(async (req, res, next) => {
   let timeReference;
   let timeData = { ...req.body };
@@ -61,17 +67,17 @@ exports.timeOut = catchAsync(async (req, res, next) => {
   let quantity;
   //find an employee and check if the employee is timed in
   await Employee.findById(timeData.EmployeeReference).then(async (employee) => {
-    //todo Error handle
     //If user is not timed in, send a message
     if (!employee.TimedIn) {
       doc = "User is not timed in";
     } else {
-      //set timeReference to the time reference held on the employee information
+      //set timeReference to the time reference held on the employee (the employee model)
       timeReference = employee.TimeReference;
       employee.TimedIn = false;
       employee.TimeReference = "";
       employee.WOReference = null;
       employee.save();
+      //we find the timeStamp and update the timeout time
       await TimeModel.findById(timeReference).then((timeStamp) => {
         timeIn = timeStamp.TimeData[0];
         //Total Hours work being stored on request
@@ -90,12 +96,10 @@ exports.timeOut = catchAsync(async (req, res, next) => {
         }
         //set the data to be stored on the timeStamp
         timeStamp.TimeData.push(date2);
-        console.log(quantity);
         timeStamp.Quantity = quantity;
         timeStamp.Desc = timeData.Desc;
         timeStamp.save();
       });
-
       //Store the time reference on the work order, and add the time to the total time on the request
       await WorkOrder.findByIdAndUpdate(
         WOReference,
@@ -107,20 +111,21 @@ exports.timeOut = catchAsync(async (req, res, next) => {
       );
     }
   });
-
   res.status(201).json({
     status: "success",
     data: {
       doc,
     },
   });
-  next();
 });
 
+//edit time after timeout
+//todo only edit if it hasn't been synced with Quickbooks (possible need more thought on this)
 exports.editTime = catchAsync(async (req, res, next) => {
   let timeData = { ...req.body };
   timeData.TimeData[0] = new Date(timeData.TimeData[0]);
   timeData.TimeData[1] = new Date(timeData.TimeData[1]);
+  //finding the difference in the new times
   let diff =
     (timeData.TimeData[0].getTime() - timeData.TimeData[1].getTime()) / 1000;
   diff /= 60;
@@ -129,15 +134,20 @@ exports.editTime = catchAsync(async (req, res, next) => {
     quantity = 1;
   }
   timeData.Quantity = quantity;
-  await Time.findByIdAndUpdate(timeData._id, timeData, { new: true }).then(
-    () => {
-      res.status(201).json({
-        status: "success",
-      });
-    }
-  );
+  //Updating times
+  let doc = await Time.findByIdAndUpdate(timeData._id, timeData, {
+    new: true,
+  });
+
+  if (!doc) {
+    return next(new AppError("No Time found with that ID", 404));
+  }
+  res.status(201).json({
+    status: "success",
+  });
 });
 
+//Add time to calendar
 exports.addTime = catchAsync(async (req, res, next) => {
   let newTime = { ...req.body };
   let quantity;
@@ -159,8 +169,8 @@ exports.addTime = catchAsync(async (req, res, next) => {
 
   newTime.Quantity = quantity;
   console.log(newTime);
+  //todo add error handling
   await Time.create(newTime).then(async (doc) => {
-    console.log(doc);
     await WorkOrder.findByIdAndUpdate(
       newTime.WOReference,
       {
@@ -174,22 +184,23 @@ exports.addTime = catchAsync(async (req, res, next) => {
       data: doc,
     });
   });
-
-  next();
 });
 
+//delete a time Entry
+//todo only delete if it hasn't been synced with Quickbooks (possible need more thought on this)
 exports.deleteTime = catchAsync(async (req, res, next) => {
-  console.log(req.params.id);
-  await Time.findByIdAndDelete(req.params.id).then(() => {
-    res.status(204).json({
-      status: "success",
-      data: { status: "Deleted" },
-    });
-  });
+  let doc = await Time.findByIdAndDelete(req.params.id);
 
-  next();
+  if (!doc) {
+    return next(new AppError("No Time found with that ID", 404));
+  }
+  res.status(204).json({
+    status: "success",
+    data: { status: "Deleted" },
+  });
 });
 
+//get all times with a range sent by the front-end
 exports.getAllTimes = catchAsync(async (req, res, next) => {
   console.log(req.query);
   let lowRange = req.query.lowRange;
@@ -208,5 +219,4 @@ exports.getAllTimes = catchAsync(async (req, res, next) => {
     status: "success",
     data: doc,
   });
-  next();
 });

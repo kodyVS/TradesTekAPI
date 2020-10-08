@@ -1,18 +1,27 @@
 const catchAsync = require("../utils/catchAsync");
 const factory = require("./factoryHandler");
 const Job = require("../models/jobModel");
-const Counter = require("../models/counterModel");
 const AppError = require("../utils/appError");
-const mongoose = require("mongoose");
 const data2xml = require("data2xml");
 const convert = data2xml({
   xmlHeader:
     '<?xml version="1.0" encoding="utf-8"?>\n<?qbxml version="13.0"?>\n',
 });
 
+//Add Job //* COMPLETED
 exports.addJob = catchAsync(async (req, res, next) => {
   //Creating Data Clones
-  let newJob = { ...req.body };
+  let newJob = {
+    Name: req.body.Name,
+    FullName: req.body.FullName,
+    ParentRef: req.body.ParentRef,
+    CompanyName: req.body.CompanyName,
+    FirstName: req.body.FirstName,
+    LastName: req.body.LastName,
+    BillAddress: req.body.BillAddress,
+    Phone: req.body.Phone,
+    Email: req.body.Email,
+  };
 
   //Creating a request to store on the Model
   Qbxml = convert("QBXML", {
@@ -34,6 +43,7 @@ exports.addJob = catchAsync(async (req, res, next) => {
   //adding request to the Model and creating a new Job in Mongo
   newJob.QBRequest = Qbxml;
   const doc = await Job.create(newJob);
+
   //Returning data to Front-End
   res.status(201).json({
     status: "success",
@@ -41,19 +51,28 @@ exports.addJob = catchAsync(async (req, res, next) => {
       doc,
     },
   });
-  next();
+  //Errors will be handled by errorController
 });
 
+//Edit Job //* COMPLETED
 exports.editJob = catchAsync(async (req, res, next) => {
-  let editedJob = { ...req.body };
-
-  //Update Model with new info
-  await Job.findOneAndUpdate({ FullName: editedJob.FullName }, editedJob, {
-    new: true,
-  });
+  //Making sure the only data fields are the ones I want
+  let editedJob = {
+    ListID: req.body.ListID,
+    FullName: req.body.FullName,
+    EditSequence: req.body.EditSequence,
+    Name: req.body.Name,
+    ParentRef: req.body.ParentRef,
+    FirstName: req.body.FirstName,
+    LastName: req.body.LastName,
+    BillAddress: req.body.BillAddress,
+    Phone: req.body.Phone,
+    Email: req.body.Email,
+  };
   //Format xml
   let qbxml;
-  //Creating a request to store on the Model if there is a ListID on the request
+
+  //Creating an add request to store on the Model if there is a ListID on the request
   if (!req.body.ListID) {
     qbxml = convert("QBXML", {
       QBXMLMsgsRq: {
@@ -103,17 +122,17 @@ exports.editJob = catchAsync(async (req, res, next) => {
     }
   );
   if (!doc) {
-    return next(new AppError("No document found with that ID", 404));
+    return next(new AppError("No Job found with that ID", 404));
   }
-  res.status(201).json({
+  res.status(200).json({
     status: "success",
     data: {
       data: "Job successfully edited",
     },
   });
-  next();
 });
 
+//Not Used yet but make a job hidden
 exports.deleteJob = catchAsync(async (req, res, next) => {
   await Job.findOneAndUpdate(
     { FullName: req.body.FullName },
@@ -122,12 +141,12 @@ exports.deleteJob = catchAsync(async (req, res, next) => {
   );
   res.status(204).json({
     status: "success",
-    data: { status: "Hidden" },
   });
-  next();
 });
 
+//Get all Jobs
 exports.getAllJobs = catchAsync(async (req, res, next) => {
+  //Finds all Jobs and sorts by Customer
   await Job.find({})
     .sort({ "ParentRef.FullName": 1 })
     .then((data) => {
@@ -135,15 +154,15 @@ exports.getAllJobs = catchAsync(async (req, res, next) => {
         status: "success",
         data,
       });
-      next();
     });
 });
 
+//Not used and probably won't be. But will keep around for future use
 exports.getOneJob = catchAsync(async (req, res, next) => {
   let doc = await Job.findById(req.params.id);
 
   if (!doc) {
-    return next(new AppError("No document found with that ID", 404));
+    return next(new AppError("No Job found with that ID", 404));
   }
 
   res.status(200).json({

@@ -10,12 +10,14 @@ const convert = data2xml({
     '<?xml version="1.0" encoding="utf-8"?>\n<?qbxml version="13.0"?>\n',
 });
 
+//todo Handle when work order is completed with quickbooks better !Important
+//todo Add pictures to work works (hold the image URL in database)
+
 exports.addWorkOrder = catchAsync(async (req, res, next) => {
-  //todo Create PO numbers when added
   let PONumber;
   let newWorkOrder = { ...req.body };
 
-  //Creating the PO Number
+  //Creating the PO Number and increase the count by one.
   await Counter.findByIdAndUpdate(
     { _id: "5f650840a2ae1d521cdb1a42" },
     { $inc: { Count: 1 } },
@@ -26,37 +28,16 @@ exports.addWorkOrder = catchAsync(async (req, res, next) => {
 
   newWorkOrder.PONumber = PONumber;
 
-  // Qbxml = convert("QBXML", {
-  //   QBXMLMsgsRq: {
-  //     _attr: { onError: "stopOnError" },
-  //     InvoiceAddRq: {
-  //       InvoiceAdd: {
-  //         CustomerRef: {
-  //           FullName: newWorkOrder.JobName,
-  //         },
-  //         ClassRef: {
-  //           FullName: newWorkOrder.JobType,
-  //         },
-  //         PONumber: newWorkOrder.PONumber,
-  //         InvoiceLineAdd: {
-  //           Desc: newWorkOrder.Name,
-  //         },
-  //       },
-  //     },
-  //   },
-  // });
-
-  // //adding request to the Model and creating a new WorkOrder in Mongo
-  // newWorkOrder.QBRequest = Qbxml;
   const doc = await WorkOrder.create(newWorkOrder);
-  //Returning data to Front-End
+
+  //Returning data to Front-End with created status code
+  //todo could remove the returning of the data. but nice to have for front-end debugging
   res.status(201).json({
     status: "success",
     data: {
       doc,
     },
   });
-  next();
 });
 
 exports.editWorkOrder = catchAsync(async (req, res, next) => {
@@ -70,17 +51,16 @@ exports.editWorkOrder = catchAsync(async (req, res, next) => {
       new: true,
     }
   );
-
   res.status(201).json({
     status: "success",
     data: {
       data: "WorkOrder successfully edited",
     },
   });
-  next();
 });
 
 // Not using this yet
+// todo Create the deletion methods
 exports.deleteWorkOrder = catchAsync(async (req, res, next) => {
   await WorkOrder.findOneAndUpdate(
     { FullName: req.body.FullName },
@@ -91,22 +71,29 @@ exports.deleteWorkOrder = catchAsync(async (req, res, next) => {
     status: "success",
     data: { status: "Hidden" },
   });
-  next();
 });
 
+// Complete a work order and send time data to quickbooks and create invoice data
+//todo Add functionailty for work orders that are completed, then marked incomplete again later
+//todo In the map functions add the statement (if timestamp.Complete === false)
 exports.completeWorkOrder = catchAsync(async (req, res, next) => {
   let workOrder = req.body;
   let InvoiceLineAdd = [];
   let totalTime = 0;
+
+  //Find the work order by ID and populate the times and the job data
   await WorkOrder.findById(workOrder.WorkOrderID)
     .populate("TimeReference")
     .populate("Job")
     .then(async (filledWO) => {
+      //If the work order is labeled construction add the total time and create an invoice line based off title of work order
       if (filledWO.JobType === "Construction") {
         filledWO.TimeReference.map((timeStamp) => {
           totalTime = totalTime + timeStamp.Quantity;
         });
         totalTime = Math.round((totalTime / 60 + Number.EPSILON) * 100) / 100;
+        //reference to the quickbooks payment lines
+        //todo be able to pull this itemRef from quickbooks and automatically populate it here
         InvoiceLineAdd = {
           ItemRef: {
             ListID: "80000008-1597162251",
@@ -118,7 +105,7 @@ exports.completeWorkOrder = catchAsync(async (req, res, next) => {
           SalesTaxCodeRef: { ListID: "80000001-1597162222", FullName: "G" },
         };
       }
-      // ? This is where I will add service requests
+      //if the job is a service call, add every time individually to the invoice with the description on the time
       if (filledWO.JobType === "Service") {
         filledWO.TimeReference.map((timeStamp) => {
           totalTime =
@@ -155,13 +142,11 @@ exports.completeWorkOrder = catchAsync(async (req, res, next) => {
           },
         },
       });
-
+      //Mark all the time data as completed/billed so after we sync to quickbooks they won't be found again
       await Time.updateMany(
         { WOReference: filledWO._id },
         { Completed: true }
-      ).then((res) => {
-        console.log(res);
-      });
+      ).then(() => {});
 
       //Store Request on the model
       filledWO.QBRequest = qbxml;
@@ -173,13 +158,13 @@ exports.completeWorkOrder = catchAsync(async (req, res, next) => {
         status: "success",
         data: "completed",
       });
-      next();
     });
 });
 
-//todo Remove the double data nest
+//Get One Work Order
 exports.getOneWorkOrder = catchAsync(async (req, res, next) => {
-  await WorkOrder.findById(req.params.id)
+  //find by id and populate all the data associated with the work order
+  let query = WorkOrder.findById(req.params.id)
     .populate({
       path: "TimeReference",
       populate: {
@@ -187,21 +172,20 @@ exports.getOneWorkOrder = catchAsync(async (req, res, next) => {
         select: "Name",
       },
     })
-    .populate("Job")
-    .then((doc) => {
-      if (!doc) {
-        return next(new AppError("No document found with that ID", 404));
-      }
-      res.status(200).json({
-        status: "success",
-        data: {
-          data: doc,
-        },
-      });
-    });
+    .populate("Job");
+  let doc = await query;
+  if (!doc) {
+    return next(new AppError("No Work Order found with that ID", 404));
+  }
+  res.status(200).json({
+    status: "success",
+    data: {
+      data: doc,
+    },
+  });
 });
 
-//todo Should combine these functions and use params to get workOrders
+//todo Combine these functions and use params to get workOrders
 exports.getAllWorkOrders = catchAsync(async (req, res, next) => {
   await WorkOrder.find({})
     .select("-TimeReference")
@@ -212,7 +196,6 @@ exports.getAllWorkOrders = catchAsync(async (req, res, next) => {
         status: "success",
         data,
       });
-      next();
     });
 });
 
@@ -226,6 +209,5 @@ exports.getAllActiveWorkOrders = catchAsync(async (req, res, next) => {
         status: "success",
         data,
       });
-      next();
     });
 });

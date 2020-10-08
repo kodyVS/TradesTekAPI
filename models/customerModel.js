@@ -3,6 +3,8 @@ const validator = require("validator");
 
 const customerSchema = new mongoose.Schema({
   ListID: String,
+
+  //todo Change it so Quickbooks Name/FullName is only stored once
   Name: String,
   EditSequence: String,
   FullName: {
@@ -13,15 +15,17 @@ const customerSchema = new mongoose.Schema({
   },
   Salutation: {
     type: String,
-    default: "Mr",
   },
   FirstName: {
     type: String,
-    required: false,
   },
   MiddleName: String,
   LastName: String,
+
+  //todo clarify what this is
   JobTitle: String,
+
+  //Sets default on Addr1 so BillAddress always exists (stop a nesting error on front nend)
   BillAddress: {
     Addr1: {
       type: String,
@@ -32,8 +36,6 @@ const customerSchema = new mongoose.Schema({
     State: String,
     PostalCode: {
       type: String,
-      minLength: [5, "PostalCode/Zip must have atleast 5 characters"],
-      maxlength: [6, "PostalCode/Zip must have atleast 6 characters"],
     },
     Country: String,
   },
@@ -41,12 +43,14 @@ const customerSchema = new mongoose.Schema({
   Phone: String,
   AltPhone: String,
   Fax: String,
+
   Email: {
     type: String,
-    validate: [validator.isEmail, "Please provide a valid email"],
   },
   QBRequest: String,
-  Synced: Boolean,
+  Synced: { type: Boolean, default: false },
+
+  //Hides customer from front-end if deleted
   Hidden: Boolean,
 });
 

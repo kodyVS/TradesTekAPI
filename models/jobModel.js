@@ -7,12 +7,16 @@ const jobSchema = new mongoose.Schema({
   EditSequence: String,
   FullName: {
     type: String,
-    unique: true,
+    unique: [true, "Name must be unqiue"],
     trim: true,
+    required: [true, "Name is required"],
   },
   ParentRef: {
     ListID: String,
-    FullName: String,
+    FullName: {
+      type: String,
+      required: true,
+    },
   },
   Salutation: {
     type: String,
@@ -20,7 +24,6 @@ const jobSchema = new mongoose.Schema({
   },
   FirstName: {
     type: String,
-    required: false,
   },
   MiddleName: String,
   LastName: String,
@@ -41,9 +44,11 @@ const jobSchema = new mongoose.Schema({
   Fax: String,
   Email: {
     type: String,
-    validate: [validator.isEmail, "Please provide a valid email"],
   },
-  Synced: Boolean,
+  Synced: {
+    type: Boolean,
+    default: false,
+  },
   QBRequest: String,
 });
 

@@ -21,7 +21,11 @@ const workOrderSchema = new mongoose.Schema({
     default: true,
   },
   Hidden: Boolean,
-  PONumber: Number,
+  PONumber: {
+    type: Number,
+    required: true,
+    unique: true,
+  },
   TotalMinutes: Number,
 
   //Quickbooks data
@@ -33,6 +37,7 @@ const workOrderSchema = new mongoose.Schema({
     ListID: String,
     FullName: String,
   },
+  //I store all the time references on this model
   TimeReference: [{ type: mongoose.Schema.Types.ObjectId, ref: "Time" }],
   //"ARAccountRef": {
   // ListID: String,

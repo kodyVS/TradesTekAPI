@@ -10,12 +10,22 @@ const convert = data2xml({
 
 //Controllers
 
+//Adds customer to database and creates an xml request for QB //* COMPLETE
+
 exports.addCustomer = catchAsync(async (req, res, next) => {
-  //Creating Data Clones
-  let mongoNewCustomer = { ...req.body };
-  let quickbooksNewCustomer = { ...req.body };
+  //Creating Data Clones and sanitizing the data
+  let mongoNewCustomer = {
+    Name: req.body.FullName,
+    FullName: req.body.FullName,
+    CompanyName: req.body.CompanyName,
+    FirstName: req.body.FirstName,
+    LastName: req.body.LastName,
+    BillAddress: req.body.BillAddress,
+    Phone: req.body.Phone,
+    Email: req.body.Email,
+  };
+  let quickbooksNewCustomer = { ...mongoNewCustomer };
   delete quickbooksNewCustomer.FullName;
-  delete quickbooksNewCustomer.Synced;
 
   //Creating a request to store on the Model
   Qbxml = convert("QBXML", {
@@ -36,10 +46,9 @@ exports.addCustomer = catchAsync(async (req, res, next) => {
       doc,
     },
   });
-  next();
 });
 
-//Edit Customers
+//Edit Customers //* COMPLETED
 exports.editCustomer = catchAsync(async (req, res, next) => {
   let editedCustomer = {
     ListID: req.body.ListID,
@@ -100,19 +109,18 @@ exports.editCustomer = catchAsync(async (req, res, next) => {
       new: true,
     }
   );
+
   //adding request to the Model and creating a new customer in Mongo
-
   if (!doc) {
-    return next(new AppError("No document found with that ID", 404));
+    return next(new AppError("No Customer found with that ID", 404));
   }
-
-  res.status(204).json({
+  res.status(200).json({
     status: "success",
   });
-  next();
 });
 
-//Delete customer changes the hidden status to true (currently not being used)
+//Not being used //todo Add front end functionality
+//Delete customer changes the hidden status to true
 exports.deleteCustomer = catchAsync(async (req, res, next) => {
   await Customer.findOneAndUpdate(
     { FullName: req.body.FullName },
@@ -121,31 +129,30 @@ exports.deleteCustomer = catchAsync(async (req, res, next) => {
   );
   res.status(204).json({
     status: "success",
-    data: {},
   });
-  next();
 });
 
 exports.getAllCustomers = catchAsync(async (req, res, next) => {
-  let data = await Customer.find();
+  //todo Add a filter that removes hidden customers from being shown on front end in getAll
+  let data = await Customer.find().select("-QBRequest -Hidden -Synced -__v");
   res.status(200).json({
     status: "success",
     data,
   });
-  next();
 });
 
+//Not being used. Might not need
+//Get One Customer
 exports.getOneCustomer = catchAsync(async (req, res, next) => {
-  let doc = await Customer.findById(req.params.id);
-
-  if (!doc) {
+  let data = await Customer.findById(req.params.id);
+  if (!data) {
     return next(new AppError("No document found with that ID", 404));
   }
 
   res.status(200).json({
     status: "success",
     data: {
-      data: doc,
+      data,
     },
   });
 });

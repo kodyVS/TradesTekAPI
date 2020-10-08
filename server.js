@@ -10,6 +10,8 @@ const customerRoutes = require("./Routes/customerRoutes");
 const jobRoutes = require("./Routes/jobRoutes");
 const employeeRoutes = require("./Routes/employeeRoutes");
 const testRoutes = require("./Routes/testRoutes");
+const AppError = require("./Utils/appError.js");
+const globalErrorHandler = require("./controllers/errorController");
 const app = express();
 const cors = require("cors");
 //Error catching on uncaughtException
@@ -33,6 +35,10 @@ app.use("/api/v1/employee", employeeRoutes);
 app.use("/api/v1/workOrder", workOrderRoutes);
 app.use("/api/v1/time", timeRoutes);
 app.use("/api/v1/test", testRoutes);
+app.all("*", (req, res, next) => {
+  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
+});
+app.use(globalErrorHandler);
 
 //starting SOAP Server
 var Server = require("quickbooks-js");
@@ -42,32 +48,32 @@ soapServer.setQBXMLHandler(qbXMLHandler);
 soapServer.run();
 
 //Setting up MongoDb server with mongoose
-if (process.env.TEST === "true") {
-  const DB = process.env.TEST_DATABASE.replace(
-    "<PASSWORD>",
-    process.env.TEST_DATABASE_PASSWORD
-  );
-
-  mongoose
-    .connect(DB, {
-      useNewUrlParser: true,
-      useCreateIndex: true,
-      useFindAndModify: false,
-    })
-    .then(() => console.log("DB connection successful!"));
-} else {
+if (process.env.TEST === "off") {
   const DB = process.env.DATABASE.replace(
     "<PASSWORD>",
     process.env.DATABASE_PASSWORD
   );
-
   mongoose
     .connect(DB, {
       useNewUrlParser: true,
       useCreateIndex: true,
       useFindAndModify: false,
+      useUnifiedTopology: true,
     })
     .then(() => console.log("DB connection successful!"));
+} else if (process.env.TEST === "on") {
+  const DB = process.env.TEST_DATABASE.replace(
+    "<PASSWORD>",
+    process.env.TEST_DATABASE_PASSWORD
+  );
+  mongoose
+    .connect(DB, {
+      useNewUrlParser: true,
+      useCreateIndex: true,
+      useFindAndModify: false,
+      useUnifiedTopology: true,
+    })
+    .then(() => console.log("Test DB connection successful!"));
 }
 
 // Starting server
