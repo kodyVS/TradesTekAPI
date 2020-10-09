@@ -4,7 +4,7 @@ const validator = require("validator");
 const customerSchema = new mongoose.Schema({
   ListID: String,
 
-  //todo Change it so Quickbooks Name/FullName is only stored once
+  //todo Change it so Quickbooks Name/FullName is only stored once instead of twice
   Name: String,
   EditSequence: String,
   FullName: {
