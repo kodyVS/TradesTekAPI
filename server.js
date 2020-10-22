@@ -9,6 +9,7 @@ const timeRoutes = require("./Routes/timeRoutes");
 const customerRoutes = require("./Routes/customerRoutes");
 const jobRoutes = require("./Routes/jobRoutes");
 const employeeRoutes = require("./Routes/employeeRoutes");
+const userRoutes = require("./Routes/userRoutes");
 const testRoutes = require("./Routes/testRoutes");
 const AppError = require("./Utils/appError.js");
 const globalErrorHandler = require("./controllers/errorController");
@@ -22,9 +23,13 @@ const cors = require("cors");
 // });
 
 //cors
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:8080",
+    credentials: true,
+  })
+);
 app.options("*", cors());
-
 //Parse body into json format
 app.use(express.json());
 
@@ -34,6 +39,7 @@ app.use("/api/v1/job", jobRoutes);
 app.use("/api/v1/employee", employeeRoutes);
 app.use("/api/v1/workOrder", workOrderRoutes);
 app.use("/api/v1/time", timeRoutes);
+app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/test", testRoutes);
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));

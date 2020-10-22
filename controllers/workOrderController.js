@@ -14,6 +14,7 @@ const convert = data2xml({
 //todo Add pictures to work works (hold the image URL in database)
 
 exports.addWorkOrder = catchAsync(async (req, res, next) => {
+  console.log(req.headers);
   let PONumber;
   let newWorkOrder = { ...req.body };
 

@@ -1,10 +1,11 @@
 const express = require("express");
 const employeeController = require("../controllers/employeeController");
 const router = express.Router();
+const authController = require("../controllers/authController");
 
 // /api/v1/employee
-
 router.route("/all").get(employeeController.getAllEmployees);
+router.use(authController.protect);
 router.route("/:id").get(employeeController.getOneEmployee);
 
 router.route("/addJob/:id").patch(employeeController.addJob);

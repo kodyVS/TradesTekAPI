@@ -1,9 +1,10 @@
 const express = require("express");
 const workOrderController = require("../controllers/workOrderController");
+const authController = require("./../controllers/authController");
 const router = express.Router();
 
 //* /api/v1/workOrder
-
+router.use(authController.protect);
 router.route("/allActive").get(workOrderController.getAllActiveWorkOrders);
 router.route("/all").get(workOrderController.getAllWorkOrders);
 router.route("/:id").get(workOrderController.getOneWorkOrder);
