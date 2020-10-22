@@ -17,10 +17,12 @@ exports.getAllEmployees = catchAsync(async (req, res, next) => {
 
 //Not used //todo Add view employee to see more information on single employee
 exports.getOneEmployee = catchAsync(async (req, res, next) => {
+  console.log(req.params.id)
   let employee = await Employee.findById(req.params.id);
   if (!employee) {
     return next(new AppError("No Employee found with that ID", 404));
   }
+  console.log(employee)
   res.status(200).json({
     status: "success",
     employee,

@@ -163,6 +163,7 @@ exports.autoLogin = async (req, res, next) => {
     status: "success",
     data: {
       UserRole: currentUser.UserRole,
+      EmployeeReference: currentUser.EmployeeReference
     },
   });
 };
