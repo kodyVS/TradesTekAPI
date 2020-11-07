@@ -134,7 +134,6 @@ async function buildRequests(callback) {
     //Only pushes the main apps data to QB
     let requests = [];
     if (process.env.TEST === "off") {
-      console.log("THIS SHOULDN'T RUN DURING A TEST");
       updatedData.push(...customerData);
       updatedData.push(...jobData);
       updatedData.push(...workOrderData);

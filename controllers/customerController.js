@@ -133,7 +133,6 @@ exports.deleteCustomer = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllCustomers = catchAsync(async (req, res, next) => {
-  //todo Add a filter that removes hidden customers from being shown on front end in getAll
   let data = await Customer.find().select("-QBRequest -Hidden -Synced -__v");
   res.status(200).json({
     status: "success",
@@ -151,8 +150,6 @@ exports.getOneCustomer = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: {
-      data,
-    },
+    data,
   });
 });

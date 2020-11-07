@@ -6,14 +6,14 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 //const Email = require("../utils/email");
 
-const signToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+const signToken = (id, UserRole) => {
+  return jwt.sign({ id, UserRole }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
 
 const createSendToken = (user, statusCode, req, res) => {
-  const token = signToken(user._id);
+  const token = signToken(user._id, user.UserRole);
 
   res.cookie("jwt", token, {
     expires: new Date(
@@ -28,10 +28,7 @@ const createSendToken = (user, statusCode, req, res) => {
 
   res.status(statusCode).json({
     status: "success",
-    data: {
-      user,
-      Userrole: user.UserRole,
-    },
+    data: user,
   });
 };
 
@@ -45,7 +42,6 @@ exports.logout = (req, res) => {
 };
 
 exports.signup = catchAsync(async (req, res, next) => {
-  console.log(req);
   const newUser = await User.create({
     Name: req.body.Name,
     Email: req.body.Email,
@@ -56,9 +52,7 @@ exports.signup = catchAsync(async (req, res, next) => {
   }).catch((err) => {
     console.log(err);
   });
-  console.log(newUser);
   const url = `${req.protocol}://${req.get("host")}/me`;
-  // console.log(url);
   //todo Add emailer
   // await new Email(newUser, url).sendWelcome();
 
@@ -102,7 +96,6 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // 2) Verification token
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-
   // 3) Check if user still exists
   const currentUser = await User.findById(decoded.id);
   if (!currentUser) {
@@ -163,7 +156,8 @@ exports.autoLogin = async (req, res, next) => {
     status: "success",
     data: {
       UserRole: currentUser.UserRole,
-      EmployeeReference: currentUser.EmployeeReference
+      EmployeeReference: currentUser.EmployeeReference,
+      Name: currentUser.Name,
     },
   });
 };

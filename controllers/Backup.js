@@ -15,13 +15,11 @@ const convert = data2xml({
 //Time in function
 exports.timeIn = catchAsync(async (req, res, next) => {
   let timeData = { ...req.body };
-  timeData.Quantity = 0;
-  console.log(req.body);
+
   let doc;
   //Find an employee and find if the employee already timed in
   let employee = await Employee.findById(timeData.EmployeeReference).then(
     async (response) => {
-      console.log(response);
       if (response.TimedIn) {
         doc = "User is already timed in";
       } else {
@@ -61,7 +59,6 @@ exports.timeIn = catchAsync(async (req, res, next) => {
 exports.timeOut = catchAsync(async (req, res, next) => {
   console.log(req.body);
   let timeReference;
-  let timeID = [];
   let timeData = { ...req.body };
   let WOReference = timeData.WOReference;
   let doc;
@@ -74,11 +71,16 @@ exports.timeOut = catchAsync(async (req, res, next) => {
     if (!employee.TimedIn) {
       doc = "User is not timed in";
     } else {
-      //we find the timeStamp and update the timeout time
+      //set timeReference to the time reference held on the employee (the employee model)
       timeReference = employee.TimeReference;
-      timeID = [employee.TimeReference];
+      employee.TimedIn = false;
+      employee.TimeReference = "";
+      employee.WOReference = null;
+      employee.save();
+      //we find the timeStamp and update the timeout time
+
       //creating the time reference
-      await TimeModel.findById(timeReference).then(async (timeStamp) => {
+      await TimeModel.findById(timeReference).then((timeStamp) => {
         //When User timed in
         timeIn = timeStamp.TimeData[0].toISOString();
 
@@ -95,6 +97,10 @@ exports.timeOut = catchAsync(async (req, res, next) => {
             quantity = 1;
           }
 
+          //todo Make the timeout request automatically only 24 hours max away from the time in.
+          if (quantity > 24 * 60) {
+            quantity = 24 * 60;
+          }
           //set the data to be stored on the timeStamp
           timeStamp.TimeData.push(date2);
           timeStamp.Quantity = quantity;
@@ -103,94 +109,44 @@ exports.timeOut = catchAsync(async (req, res, next) => {
         } else {
           let startTime = date1.getTime();
           let leftOverTime = date2.getTime() - startTime;
-          let date1Hours = date1.getUTCHours();
-          let date1Minutes = date1.getUTCMinutes();
-          let date1Seconds = date1.getUTCSeconds();
+          let date1Hours = date1.getHours();
+          let date1Minutes = date1.getMinutes();
+          let date1Seconds = date1.getSeconds();
+
           let day1Time =
             24 * 60 * 60 * 1000 -
             (date1Hours * 60 * 60 * 1000 +
               date1Minutes * 60 * 1000 +
               date1Seconds * 1000);
           leftOverTime = leftOverTime - day1Time;
-
-          let day1Date1 = date1;
-          let day1Date2 = new Date(
+          let day1TimeOut = new Date(
             Date.UTC(
-              date1.getFullYear(),
+              date1.getYear(),
               date1.getMonth(),
-              date1.getDate(),
+              date1.getDay(),
               23,
               59,
               59
             )
           );
-
-          let diff = (day1Date2.getTime() - day1Date1.getTime()) / 1000;
-          diff /= 60;
-          quantity = Math.abs(Math.round(diff));
-          if (quantity === 0) {
-            quantity = 1;
-          }
-
-          //set the data to be stored on the timeStamp
-          timeStamp.TimeData.push(day1Date2);
-          timeStamp.Quantity = quantity;
-          timeStamp.Desc = timeData.Desc;
-          timeStamp.save();
-
-          let entryOne = {
-            WorkOrder: timeStamp.WorkOrder,
-            WOReference: timeStamp.WOReference,
-            TimeData: [day1Date1, day1Date2],
-            Desc: timeData.Desc,
-            Employee: employee.Name,
-            EmployeeReference: employee._id,
-            PONumber: timeStamp.PONumber,
-            Quantity: quantity,
-          };
-
-          //Create a time entry
-          console.log("Entry One: ", day1Date1, day1Date2);
           for (let i = 1; leftOverTime > 0; i++) {
-            let timeIn = new Date(
-              Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate())
-            );
-            if (leftOverTime >= 24 * 60 * 60 * 1000) {
+            if (leftoverTime >= 24 * 60 * 60 * 1000) {
+              let timeIn = new Date(
+                Date.UTC(date1.getYear(), date1.getMonth(), date1.getDay())
+              );
               timeIn.setDate(timeIn.getDate() + i);
               let timeOut = new Date(timeIn.getTime());
-              timeOut.setUTCHours(23, 59, 59, 0);
+              timeOut.setHours(23, 59, 59, 0);
               // Call ADDTIME FUNCTION to Add a new Time
               leftOverTime = leftOverTime - 24 * 60 * 60 * 1000;
-              entryOne.TimeData = [timeIn, timeOut];
-
-              let diff = (timeOut.getTime() - timeIn.getTime()) / 1000;
-              diff /= 60;
-              let localQuantity = Math.abs(Math.round(diff));
-              if (localQuantity === 0) {
-                localQuantity = 1;
-              }
-              entryOne.Quantity = localQuantity;
-              let newFullDaytimeEntry = await Time.create(entryOne);
-              timeID.push(newFullDaytimeEntry._id);
-              console.log("Entry Two: ", timeIn, timeOut);
             } else {
+              let timeIn = new Date(
+                Date.UTC(date1.getYear(), date1.getMonth(), date1.getDay())
+              );
               timeIn.setDate(timeIn.getDate() + i);
-              console.log(leftOverTime);
               let timeOut = new Date(timeIn.getTime() + leftOverTime);
               //Call ADDTIME FUNCTION to add a new Time
               leftOverTime = 0;
-              //todo Duplicate Code
-              entryOne.TimeData = [timeIn, timeOut];
-              let diff = (timeOut.getTime() - timeIn.getTime()) / 1000;
-              diff /= 60;
-              let localQuantity = Math.abs(Math.round(diff));
-              if (localQuantity === 0) {
-                localQuantity = 1;
-              }
-              entryOne.Quantity = localQuantity;
-              let newFullDaytimeEntry = await Time.create(entryOne);
-              timeID.push(newFullDaytimeEntry._id);
-              console.log("Entry Three ", timeIn, timeOut);
             }
           }
         }
@@ -199,16 +155,12 @@ exports.timeOut = catchAsync(async (req, res, next) => {
       await WorkOrder.findByIdAndUpdate(
         WOReference,
         {
-          $push: { TimeReference: timeID },
+          $inc: { TotalMinutes: quantity },
+          $push: { TimeReference: timeReference },
         },
         { new: true }
       );
     }
-    //set timeReference to the time reference held on the employee (the employee model)
-    employee.TimedIn = false;
-    employee.TimeReference = "";
-    employee.WOReference = null;
-    employee.save();
   });
   res.status(201).json({
     status: "success",
@@ -248,7 +200,6 @@ exports.editTime = catchAsync(async (req, res, next) => {
 
 //Add time to calendar
 exports.addTime = catchAsync(async (req, res, next) => {
-  console.log(req.body);
   let newTime = { ...req.body };
   let quantity;
   newTime.TimeData[0] = new Date(newTime.TimeData[0]);

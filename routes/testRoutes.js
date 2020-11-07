@@ -14,7 +14,6 @@ router.route("/all").get(async (req, res, next) => {
 
 router.route("/add").post(
   catchAsync(async (req, res, next) => {
-    console.log(req.body);
     await Test.create(req.body).then((data) => {
       res.status(201).json({
         status: "success",

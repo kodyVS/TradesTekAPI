@@ -12,6 +12,10 @@ const workOrderSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  IsPending: {
+    type: Boolean,
+    default: false,
+  },
   Employees: {
     type: Array,
   },
@@ -37,6 +41,11 @@ const workOrderSchema = new mongoose.Schema({
     ListID: String,
     FullName: String,
   },
+  StartDate: {
+    type: Date,
+  },
+  EndDate: { type: Date },
+  IncludesTime: { type: Boolean },
   //I store all the time references on this model
   TimeReference: [{ type: mongoose.Schema.Types.ObjectId, ref: "Time" }],
   //"ARAccountRef": {

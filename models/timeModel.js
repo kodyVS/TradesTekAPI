@@ -24,7 +24,7 @@ const timeSchema = new mongoose.Schema({
     FullName: String,
   },
   Desc: String,
-  Quantity: Number,
+  Quantity: { type: Number, required: true },
   Synced: {
     type: Boolean,
     default: false,
