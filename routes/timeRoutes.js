@@ -9,7 +9,7 @@ router.route("/all").get(timeController.getAllTimes);
 
 router.route("/timeIn").post(timeController.timeIn);
 router.route("/timeOut").post(timeController.timeOut);
-router.route("/delete/:id").delete(timeController.deleteTime);
+router.route("/delete").delete(timeController.deleteTime);
 router.route("/edit").patch(timeController.editTime);
 router.route("/add").post(timeController.addTime);
 module.exports = router;

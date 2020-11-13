@@ -40,6 +40,8 @@ const employeeSchema = new mongoose.Schema({
   TimedIn: Boolean,
   TimeReference: "String",
   WOReference: { type: mongoose.Schema.Types.ObjectId, ref: "WorkOrder" },
+  Lunch: { type: Boolean },
+  Hidden: Boolean,
 });
 
 //! Change Employees to Employee

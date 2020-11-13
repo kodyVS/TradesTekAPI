@@ -39,6 +39,10 @@ const timeSchema = new mongoose.Schema({
       enum: ["Construction", "Service"],
     },
   },
+  Lunch: {
+    type: Boolean,
+    default: false,
+  },
 });
 const Time = mongoose.model("Time", timeSchema);
 module.exports = Time;

@@ -61,14 +61,21 @@ exports.editWorkOrder = catchAsync(async (req, res, next) => {
   });
 });
 
-// Not using this yet
-// todo Create the deletion methods
 exports.deleteWorkOrder = catchAsync(async (req, res, next) => {
-  await WorkOrder.findOneAndUpdate(
-    { FullName: req.body.FullName },
-    { Hidden: true },
-    { new: true }
-  );
+  let deletedWO = await WorkOrder.findById(req.body._id);
+  if (deletedWO.TimeReference) {
+    if (deletedWO.TimeReference.length > 0) {
+      console.log("time data is present");
+      console.log(deletedWO.TimeReference);
+      return next(
+        new AppError(
+          "Could not delete. This work order has time attached to it.",
+          400
+        )
+      );
+    }
+  }
+  await WorkOrder.findByIdAndDelete(deletedWO._id);
   res.status(204).json({
     status: "success",
     data: { status: "Hidden" },

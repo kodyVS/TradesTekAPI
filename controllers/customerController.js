@@ -48,7 +48,7 @@ exports.addCustomer = catchAsync(async (req, res, next) => {
   });
 });
 
-//Edit Customers //* COMPLETED
+//Edit Customers
 exports.editCustomer = catchAsync(async (req, res, next) => {
   let editedCustomer = {
     ListID: req.body.ListID,
@@ -61,6 +61,7 @@ exports.editCustomer = catchAsync(async (req, res, next) => {
     BillAddress: req.body.BillAddress,
     Phone: req.body.Phone,
     Email: req.body.Email,
+    Hidden: req.body.Hidden,
   };
 
   let qbxml;
@@ -71,6 +72,7 @@ exports.editCustomer = catchAsync(async (req, res, next) => {
     delete qbxmlBody.ListID;
     delete qbxmlBody.EditSequence;
     delete qbxmlBody.FullName;
+    delete qbxmlBody.Hidden;
     qbxml = convert("QBXML", {
       QBXMLMsgsRq: {
         _attr: { onError: "stopOnError" },
@@ -81,6 +83,7 @@ exports.editCustomer = catchAsync(async (req, res, next) => {
     });
   } else {
     delete qbxmlBody.FullName;
+    delete qbxmlBody.Hidden;
     qbxml = convert("QBXML", {
       QBXMLMsgsRq: {
         _attr: { onError: "stopOnError" },
@@ -102,6 +105,7 @@ exports.editCustomer = catchAsync(async (req, res, next) => {
       BillAddress: editedCustomer.BillAddress,
       Phone: editedCustomer.Phone,
       Email: editedCustomer.Email,
+      Hidden: false,
       QBRequest: qbxml,
       Synced: false,
     },
@@ -122,8 +126,8 @@ exports.editCustomer = catchAsync(async (req, res, next) => {
 //Not being used //todo Add front end functionality
 //Delete customer changes the hidden status to true
 exports.deleteCustomer = catchAsync(async (req, res, next) => {
-  await Customer.findOneAndUpdate(
-    { FullName: req.body.FullName },
+  await Customer.findByIdAndUpdate(
+    req.body._id,
     { Hidden: true },
     { new: true }
   );
@@ -133,7 +137,14 @@ exports.deleteCustomer = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllCustomers = catchAsync(async (req, res, next) => {
-  let data = await Customer.find().select("-QBRequest -Hidden -Synced -__v");
+  console.log(req.query);
+  searchFilter = { Hidden: { $ne: true } };
+  if (req.query.ShowHidden === "true") {
+    searchFilter = { Hidden: true };
+  }
+  let data = await Customer.find(searchFilter).select(
+    "-QBRequest -Synced -__v"
+  );
   res.status(200).json({
     status: "success",
     data,

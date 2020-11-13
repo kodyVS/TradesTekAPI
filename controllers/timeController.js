@@ -4,52 +4,38 @@ const TimeModel = require("../models/timeModel");
 const WorkOrder = require("../models/workOrderModel");
 const Employee = require("../models/employeeModel");
 const AppError = require("../utils/appError");
-const mongoose = require("mongoose");
-const data2xml = require("data2xml");
 const Time = require("../models/timeModel");
-const convert = data2xml({
-  xmlHeader:
-    '<?xml version="1.0" encoding="utf-8"?>\n<?qbxml version="13.0"?>\n',
-});
 
 //Time in function
 exports.timeIn = catchAsync(async (req, res, next) => {
   let timeData = { ...req.body };
   timeData.Quantity = 0;
-  console.log(req.body);
   let doc;
   //Find an employee and find if the employee already timed in
-  let employee = await Employee.findById(timeData.EmployeeReference).then(
-    async (response) => {
-      console.log(response);
-      if (response.TimedIn) {
-        doc = "User is already timed in";
-      } else {
-        //create a time model with the time data
-        timeData.TimeData = new Date(timeData.TimeData);
-        doc = await TimeModel.create(timeData).then(async (response) => {
-          //After the time model is created store as a reference on the employee
-          await Employee.findByIdAndUpdate(
-            response.EmployeeReference,
-            {
-              TimedIn: true,
-              TimeReference: response._id,
-              WOReference: response.WOReference,
-              WorkOrder: response.WorkOrder,
-            },
-            { new: true }
-          );
-        });
-      }
-
-      res.status(201).json({
-        status: "success",
-        data: {
-          doc,
-        },
-      });
+  await Employee.findById(timeData.EmployeeReference).then(async (employee) => {
+    if (employee.TimedIn) {
+      doc = "User is already timed in";
+    } else {
+      //create a time model with the time data
+      timeData.TimeData = new Date(timeData.TimeData);
+      timeStamp = await TimeModel.create(timeData);
+      //After the time model is created store as a reference on the employee
+      employee.TimedIn = true;
+      employee.TimeReference = timeStamp._id;
+      employee.WOReference = timeStamp.WOReference;
+      employee.WorkOrder = timeStamp.WorkOrder;
+      employee.Lunch = timeStamp.Lunch;
+      doc = "Time Added";
+      employee.save();
     }
-  );
+
+    res.status(201).json({
+      status: "success",
+      data: {
+        doc,
+      },
+    });
+  });
   //send an error if the employee doesn't have an ID
   // if (!employee) {
   //   return next(new AppError("No Employee found with that ID", 404));
@@ -78,6 +64,7 @@ exports.timeOut = catchAsync(async (req, res, next) => {
       timeReference = employee.TimeReference;
       timeID = [employee.TimeReference];
       //creating the time reference
+      let finishedTime;
       await TimeModel.findById(timeReference).then(async (timeStamp) => {
         //When User timed in
         timeIn = timeStamp.TimeData[0].toISOString();
@@ -194,20 +181,25 @@ exports.timeOut = catchAsync(async (req, res, next) => {
             }
           }
         }
+        finishedTime = timeStamp;
       });
       //Store the time reference on the work order, and add the time to the total time on the request
-      await WorkOrder.findByIdAndUpdate(
-        WOReference,
-        {
-          $push: { TimeReference: timeID },
-        },
-        { new: true }
-      );
+      if (!finishedTime.Lunch) {
+        await WorkOrder.findByIdAndUpdate(
+          WOReference,
+          {
+            $push: { TimeReference: timeID },
+          },
+          { new: true }
+        );
+      }
     }
+
     //set timeReference to the time reference held on the employee (the employee model)
     employee.TimedIn = false;
     employee.TimeReference = "";
     employee.WOReference = null;
+    employee.Lunch = false;
     employee.save();
   });
   res.status(201).json({
@@ -286,10 +278,18 @@ exports.addTime = catchAsync(async (req, res, next) => {
 });
 
 //delete a time Entry
+//fix Update the work order model by removing the time entry on the array as well
 //todo only delete if it hasn't been synced with Quickbooks (possible need more thought on this)
 exports.deleteTime = catchAsync(async (req, res, next) => {
-  let doc = await Time.findByIdAndDelete(req.params.id);
-
+  console.log(req.params, req.query);
+  let doc = await Time.findByIdAndDelete(req.query.id);
+  await WorkOrder.findByIdAndUpdate(
+    req.query.WOReference,
+    {
+      $pull: { TimeReference: req.query.id },
+    },
+    { new: true }
+  );
   if (!doc) {
     return next(new AppError("No Time found with that ID", 404));
   }

@@ -68,6 +68,7 @@ exports.editJob = catchAsync(async (req, res, next) => {
     BillAddress: req.body.BillAddress,
     Phone: req.body.Phone,
     Email: req.body.Email,
+    Hidden: req.body.Hidden,
   };
   //Format xml
   let qbxml;
@@ -111,12 +112,12 @@ exports.editJob = catchAsync(async (req, res, next) => {
     });
   }
   //Store Request on the model
+  editedJob.QBRequest = qbxml;
+  editedJob.Synced = false;
+
   let doc = await Job.findOneAndUpdate(
     { FullName: editedJob.FullName },
-    {
-      QBRequest: qbxml,
-      Synced: false,
-    },
+    editedJob,
     {
       new: true,
     }
@@ -132,10 +133,9 @@ exports.editJob = catchAsync(async (req, res, next) => {
   });
 });
 
-//Not Used yet but make a job hidden
 exports.deleteJob = catchAsync(async (req, res, next) => {
   await Job.findOneAndUpdate(
-    { FullName: req.body.FullName },
+    { _id: req.body._id },
     { Hidden: true },
     { new: true }
   );
@@ -147,7 +147,11 @@ exports.deleteJob = catchAsync(async (req, res, next) => {
 //Get all Jobs
 exports.getAllJobs = catchAsync(async (req, res, next) => {
   //Finds all Jobs and sorts by Customer
-  await Job.find({})
+  let filter = { Hidden: { $ne: true } };
+  if (req.query.ShowHidden === "true") {
+    filter = { Hidden: true };
+  }
+  await Job.find(filter)
     .sort({ "ParentRef.FullName": 1 })
     .then((data) => {
       res.status(200).json({

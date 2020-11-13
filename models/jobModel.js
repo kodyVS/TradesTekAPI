@@ -50,6 +50,7 @@ const jobSchema = new mongoose.Schema({
     default: false,
   },
   QBRequest: String,
+  Hidden: Boolean,
 });
 
 const Job = mongoose.model("Job", jobSchema);
