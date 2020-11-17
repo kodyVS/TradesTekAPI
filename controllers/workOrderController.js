@@ -238,19 +238,108 @@ exports.getOneWorkOrder = catchAsync(async (req, res, next) => {
   });
 });
 
-//todo Combine these functions and use params to get workOrders
 exports.getAllWorkOrders = catchAsync(async (req, res, next) => {
-  let searchFilter = { Complete: false };
-  await WorkOrder.find()
-    .select("-TimeReference")
-    .sort({ PONumber: -1 })
-    .populate("Job")
-    .then((data) => {
+  let searchFilter = { Complete: true };
+  let complete;
+  console.log(req.query);
+  if (req.query.SearchText) {
+    if (req.query.Complete === "true") {
+      complete = true;
+    } else if (req.query.Complete === "false") {
+      complete = false;
+    }
+    let skip =
+      (parseInt(req.query.Page) - 1) * parseInt(req.query.ItemsPerPage);
+    let limit = parseInt(req.query.ItemsPerPage);
+    let pipeline = [
+      {
+        $lookup: {
+          from: "jobs",
+          localField: "Job",
+          foreignField: "_id",
+          as: "Job",
+        },
+      },
+      {
+        $match: {
+          $and: [
+            { Complete: complete },
+            {
+              $or: [
+                {
+                  Name: {
+                    $regex: req.query.SearchText,
+                    $options: "i",
+                  },
+                },
+                {
+                  Description: {
+                    $regex: req.query.SearchText,
+                    $options: "i",
+                  },
+                },
+                {
+                  Employees: {
+                    $regex: req.query.SearchText,
+                    $options: "i",
+                  },
+                },
+                {
+                  JobType: {
+                    $regex: req.query.SearchText,
+                    $options: "i",
+                  },
+                },
+                {
+                  "Job.FullName": {
+                    $regex: req.query.SearchText,
+                    $options: "i",
+                  },
+                },
+                {
+                  PONumber: {
+                    $regex: req.query.SearchText,
+                    $options: "i",
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        $unset: "TimeReference",
+      },
+      { $sort: { PONumber: -1 } },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }, { $addFields: { page: 1 } }],
+          workOrders: [{ $skip: skip }, { $limit: limit }], // add projection here wish you re-shape the docs
+        },
+      },
+    ];
+    await WorkOrder.aggregate(pipeline).then((data) => {
+      data[0].workOrders.map((workOrder) => {
+        workOrder.Job = workOrder.Job[0];
+      });
+
       res.status(200).json({
         status: "success",
-        data,
+        data: data[0],
       });
     });
+  } else {
+    await WorkOrder.find(searchFilter)
+      .select("-TimeReference")
+      .sort({ PONumber: -1 })
+      .populate("Job")
+      .then((data) => {
+        res.status(200).json({
+          status: "success",
+          data: { workOrders: data },
+        });
+      });
+  }
 });
 
 exports.getAllActiveWorkOrders = catchAsync(async (req, res, next) => {

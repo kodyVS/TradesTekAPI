@@ -26,7 +26,7 @@ const workOrderSchema = new mongoose.Schema({
   },
   Hidden: Boolean,
   PONumber: {
-    type: Number,
+    type: String,
     required: true,
     unique: true,
   },
