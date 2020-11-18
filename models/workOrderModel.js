@@ -31,6 +31,11 @@ const workOrderSchema = new mongoose.Schema({
     unique: true,
   },
   TotalMinutes: Number,
+  Images: [
+    {
+      type: String,
+    },
+  ],
 
   //Quickbooks data
   TxnID: String,

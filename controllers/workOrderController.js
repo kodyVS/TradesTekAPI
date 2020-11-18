@@ -7,9 +7,67 @@ const data2xml = require("data2xml");
 const jwt = require("jsonwebtoken");
 const { promisify } = require("util");
 const Time = require("../models/timeModel");
+const { cloudinary } = require("../Utils/cloudinary");
+const path = require("path");
+const DatauriParser = require("datauri/parser");
 const convert = data2xml({
   xmlHeader:
     '<?xml version="1.0" encoding="utf-8"?>\n<?qbxml version="13.0"?>\n',
+});
+
+//multer
+
+const multer = require("multer");
+const storage = multer.memoryStorage();
+const upload = multer({ storage }).single("image");
+exports.uploadSinglePhoto = upload;
+const parser = new DatauriParser();
+// const dataUri = (req) =>
+//   dUri.format(path.extname(req.file.originalname).toString(), req.file.buffer);
+//const multerStorage = multer.memoryStorage();
+
+// const multerFilter = (req, file, cb) => {
+//   if (file.mimetype.startsWith("image")) {
+//     cb(null, true);
+//   } else {
+//     cb(new AppError("Not an image! Please upload only images.", 400), false);
+//   }
+// };
+
+//Upload document file
+exports.uploadDocument = catchAsync(async (req, res, next) => {
+  console.log(req.body._id);
+  let data;
+  try {
+    //parsing buffer into a base64 string
+    const file = parser.format(
+      path.extname(req.file.originalname).toString(),
+      req.file.buffer
+    ).content;
+
+    //Uploading the file to cloudinary
+    let uploadedResponse = await cloudinary.uploader.upload(file, {
+      upload_preset: "workorderfiles",
+    });
+    await WorkOrder.findByIdAndUpdate(
+      req.body._id,
+      { $push: { Images: uploadedResponse.url } },
+      { new: true }
+    ).catch((err) => {
+      console.log(err);
+    });
+    console.log(uploadedResponse);
+
+    data = uploadedResponse;
+  } catch (error) {
+    data = error;
+    console.log(error);
+  }
+
+  res.status(200).json({
+    status: "success",
+    data,
+  });
 });
 
 //todo Handle when work order is completed with quickbooks better !Important

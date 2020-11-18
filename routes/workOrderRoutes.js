@@ -13,5 +13,9 @@ router.route("/complete").post(workOrderController.completeWorkOrder);
 router.route("/add").post(workOrderController.addWorkOrder);
 router.route("/edit").post(workOrderController.editWorkOrder);
 router.route("/delete").post(workOrderController.deleteWorkOrder);
-
+router.post(
+  "/upload",
+  workOrderController.uploadSinglePhoto,
+  workOrderController.uploadDocument
+);
 module.exports = router;
