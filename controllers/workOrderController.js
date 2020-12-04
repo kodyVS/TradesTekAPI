@@ -35,7 +35,7 @@ const parser = new DatauriParser();
 // };
 
 //Upload document file
-exports.uploadDocument = catchAsync(async (req, res, next) => {
+exports.uploadImage = catchAsync(async (req, res, next) => {
   console.log(req.body._id);
   let data;
   try {
@@ -51,7 +51,7 @@ exports.uploadDocument = catchAsync(async (req, res, next) => {
     });
     await WorkOrder.findByIdAndUpdate(
       req.body._id,
-      { $push: { Images: uploadedResponse.url } },
+      { $push: { Images: uploadedResponse } },
       { new: true }
     ).catch((err) => {
       console.log(err);
@@ -70,11 +70,31 @@ exports.uploadDocument = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.deleteImage = catchAsync(async (req, res, next) => {
+  let workOrderID = req.body.WorkOrderID;
+  let imageID = req.body.ImagePublicID;
+
+  let workOrder = await WorkOrder.findByIdAndUpdate(
+    workOrderID,
+    { $pull: { Images: { public_id: imageID } } },
+    { new: true }
+  );
+  if (!workOrder) {
+    return new AppError("No document found with that Id", 404);
+  }
+
+  let cloudinaryResponse = await cloudinary.uploader.destroy(imageID);
+
+  console.log(cloudinaryResponse);
+
+  res.status(204).json({
+    status: "success",
+    data: { status: "Hidden" },
+  });
+});
 //todo Handle when work order is completed with quickbooks better !Important
-//todo Add pictures to work works (hold the image URL in database)
 
 exports.addWorkOrder = catchAsync(async (req, res, next) => {
-  console.log(req.headers);
   let PONumber;
   let newWorkOrder = { ...req.body };
 
@@ -249,7 +269,6 @@ exports.completeWorkOrder = catchAsync(async (req, res, next) => {
         });
       });
   } else if (decoded.UserRole === "user") {
-    console.log("hello");
     await WorkOrder.findByIdAndUpdate(
       workOrder.WorkOrderID,
       {
@@ -299,7 +318,6 @@ exports.getOneWorkOrder = catchAsync(async (req, res, next) => {
 exports.getAllWorkOrders = catchAsync(async (req, res, next) => {
   let searchFilter = { Complete: true };
   let complete;
-  console.log(req.query);
   if (req.query.SearchText) {
     if (req.query.Complete === "true") {
       complete = true;

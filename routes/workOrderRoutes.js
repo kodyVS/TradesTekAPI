@@ -16,6 +16,9 @@ router.route("/delete").post(workOrderController.deleteWorkOrder);
 router.post(
   "/upload",
   workOrderController.uploadSinglePhoto,
-  workOrderController.uploadDocument
+  workOrderController.uploadImage
 );
+router.patch("/deleteImage", workOrderController.deleteImage);
 module.exports = router;
+
+//NEXT DAY MAKE DELETE IMAGE ROUTE
