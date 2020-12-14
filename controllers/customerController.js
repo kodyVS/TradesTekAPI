@@ -137,7 +137,6 @@ exports.deleteCustomer = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllCustomers = catchAsync(async (req, res, next) => {
-  console.log(req.query);
   searchFilter = { Hidden: { $ne: true } };
   if (req.query.ShowHidden === "true") {
     searchFilter = { Hidden: true };

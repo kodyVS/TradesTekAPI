@@ -6,6 +6,7 @@ const dotenv = require("dotenv").config();
 const express = require("express");
 const workOrderRoutes = require("./Routes/workOrderRoutes");
 const timeRoutes = require("./Routes/timeRoutes");
+const settingsRoutes = require("./Routes/settingsRoutes");
 const customerRoutes = require("./Routes/customerRoutes");
 const jobRoutes = require("./Routes/jobRoutes");
 const employeeRoutes = require("./Routes/employeeRoutes");
@@ -41,6 +42,7 @@ app.use("/api/v1/workOrder", workOrderRoutes);
 app.use("/api/v1/time", timeRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/test", testRoutes);
+app.use("/api/v1/settings", settingsRoutes);
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });

@@ -57,7 +57,6 @@ exports.timeIn = catchAsync(async (req, res, next) => {
 //Function for timing out
 //todo error handle
 exports.timeOut = catchAsync(async (req, res, next) => {
-  console.log(req.body);
   let timeReference;
   let timeData = { ...req.body };
   let WOReference = timeData.WOReference;
@@ -252,7 +251,6 @@ exports.deleteTime = catchAsync(async (req, res, next) => {
 
 //get all times with a range sent by the front-end
 exports.getAllTimes = catchAsync(async (req, res, next) => {
-  console.log(req.query);
   let lowRange = `${req.query.lowRange}`;
   let highRange = `${req.query.highRange}`;
 

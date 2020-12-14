@@ -6,9 +6,16 @@ const data2xml = require("data2xml");
 
 //todo Make the popuation a param sent by front end
 exports.getAllEmployees = catchAsync(async (req, res, next) => {
-  let data = await Employee.find({})
+  let filter = { Hidden: false };
+  if (req.query) {
+    if (req.query.ShowHidden === "true") {
+      filter = {};
+    }
+  }
+  let data = await Employee.find(filter)
     .select("-__V -Jobs ")
-    .populate("WOReference");
+    .populate("WOReference")
+    .sort({ Hidden: -1, Name: 1 });
   res.status(200).json({
     status: "success",
     data,
@@ -30,7 +37,7 @@ exports.getOneEmployee = catchAsync(async (req, res, next) => {
 //Not used
 exports.editEmployee = catchAsync(async (req, res, next) => {
   let newInfo = req.body;
-  let employee = await Employee.findByIdAndUpdate(req.params.id, newInfo, {
+  let employee = await Employee.findByIdAndUpdate(req.query.id, newInfo, {
     new: true,
   });
   if (!employee) {
@@ -41,8 +48,6 @@ exports.editEmployee = catchAsync(async (req, res, next) => {
     employee,
   });
 });
-
-//todo Add a delete employee to hide ("Deleted") employees
 
 //! Flagged for deletion but could still use
 exports.addJob = catchAsync(async (req, res, next) => {

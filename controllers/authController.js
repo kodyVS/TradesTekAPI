@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const Settings = require("../models/settingsModel");
 //const Email = require("../utils/email");
 
 const signToken = (id, UserRole) => {
@@ -152,12 +153,15 @@ exports.autoLogin = async (req, res, next) => {
   if (currentUser.changedPasswordAfter(decoded.iat)) {
     return next(new AppError("Something happened! Please log in again", 401));
   }
+
+  let settings = await Settings.findById("5fd031eb75b3c84d5c3b52e6");
   res.status(200).json({
     status: "success",
     data: {
       UserRole: currentUser.UserRole,
       EmployeeReference: currentUser.EmployeeReference,
       Name: currentUser.Name,
+      Settings: settings,
     },
   });
 };

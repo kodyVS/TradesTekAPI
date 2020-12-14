@@ -45,7 +45,6 @@ exports.timeIn = catchAsync(async (req, res, next) => {
 //Function for timing out
 //todo error handle
 exports.timeOut = catchAsync(async (req, res, next) => {
-  console.log(req.body);
   let timeReference;
   let timeID = [];
   let timeData = { ...req.body };
@@ -137,7 +136,6 @@ exports.timeOut = catchAsync(async (req, res, next) => {
           };
 
           //Create a time entry
-          console.log("Entry One: ", day1Date1, day1Date2);
           for (let i = 1; leftOverTime > 0; i++) {
             let timeIn = new Date(
               Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate())
@@ -240,7 +238,6 @@ exports.editTime = catchAsync(async (req, res, next) => {
 
 //Add time to calendar
 exports.addTime = catchAsync(async (req, res, next) => {
-  console.log(req.body);
   let newTime = { ...req.body };
   let quantity;
   newTime.TimeData[0] = new Date(newTime.TimeData[0]);
@@ -281,7 +278,6 @@ exports.addTime = catchAsync(async (req, res, next) => {
 //fix Update the work order model by removing the time entry on the array as well
 //todo only delete if it hasn't been synced with Quickbooks (possible need more thought on this)
 exports.deleteTime = catchAsync(async (req, res, next) => {
-  console.log(req.params, req.query);
   let doc = await Time.findByIdAndDelete(req.query.id);
   await WorkOrder.findByIdAndUpdate(
     req.query.WOReference,

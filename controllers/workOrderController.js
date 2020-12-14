@@ -36,7 +36,6 @@ const parser = new DatauriParser();
 
 //Upload document file
 exports.uploadImage = catchAsync(async (req, res, next) => {
-  console.log(req.body._id);
   let data;
   try {
     //parsing buffer into a base64 string
@@ -56,7 +55,6 @@ exports.uploadImage = catchAsync(async (req, res, next) => {
     ).catch((err) => {
       console.log(err);
     });
-    console.log(uploadedResponse);
 
     data = uploadedResponse;
   } catch (error) {
@@ -268,7 +266,7 @@ exports.completeWorkOrder = catchAsync(async (req, res, next) => {
           data: "completed",
         });
       });
-  } else if (decoded.UserRole === "user") {
+  } else if (decoded.UserRole === "User") {
     await WorkOrder.findByIdAndUpdate(
       workOrder.WorkOrderID,
       {

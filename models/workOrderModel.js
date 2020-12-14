@@ -6,7 +6,10 @@ const workOrderSchema = new mongoose.Schema({
   Job: { type: mongoose.Schema.Types.ObjectId, ref: "Job" },
   Description: String,
   JobType: {
-    type: String,
+    Name: {
+      type: String,
+    },
+    Color: { type: String },
   },
   Complete: {
     type: Boolean,
