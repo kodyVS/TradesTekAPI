@@ -49,7 +49,7 @@ exports.timeIn = catchAsync(async (req, res, next) => {
     }
   );
   //send an error if the employee doesn't have an ID
-  // if (!employee) {
+  // if (!technician) {
   //   return next(new AppError("No Employee found with that ID", 404));
   // }
 });

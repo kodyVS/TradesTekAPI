@@ -13,7 +13,7 @@ const signToken = (id, UserRole) => {
   });
 };
 
-const createSendToken = (user, statusCode, req, res) => {
+const createSendToken = async (user, statusCode, req, res) => {
   const token = signToken(user._id, user.UserRole);
 
   res.cookie("jwt", token, {
@@ -26,10 +26,22 @@ const createSendToken = (user, statusCode, req, res) => {
 
   // Remove password from output
   user.Password = undefined;
-
+  let settings = await Settings.findById("5fd031eb75b3c84d5c3b52e6");
+  settingsJSON = settings.toJSON();
+  Object.keys(settingsJSON.permissions.access).map((key) => {
+    if (
+      settingsJSON.permissions.access[key].roles.indexOf(user.UserRole) > -1 ||
+      user.UserRole === "admin"
+    ) {
+      settingsJSON.permissions.access[key].isAuthenticated = true;
+    } else {
+      settingsJSON.permissions.access[key].isAuthenticated = false;
+    }
+  });
   res.status(statusCode).json({
     status: "success",
     data: user,
+    settings: settingsJSON,
   });
 };
 
@@ -155,13 +167,26 @@ exports.autoLogin = async (req, res, next) => {
   }
 
   let settings = await Settings.findById("5fd031eb75b3c84d5c3b52e6");
+  settingsJSON = settings.toJSON();
+  Object.keys(settingsJSON.permissions.access).map((key) => {
+    if (
+      settingsJSON.permissions.access[key].roles.indexOf(currentUser.UserRole) >
+        -1 ||
+      currentUser.UserRole === "admin"
+    ) {
+      settingsJSON.permissions.access[key].isAuthenticated = true;
+    } else {
+      settingsJSON.permissions.access[key].isAuthenticated = false;
+    }
+  });
   res.status(200).json({
     status: "success",
     data: {
       UserRole: currentUser.UserRole,
       EmployeeReference: currentUser.EmployeeReference,
       Name: currentUser.Name,
-      Settings: settings,
+      Photo: currentUser.Photo.iconURL,
+      Settings: settingsJSON,
     },
   });
 };

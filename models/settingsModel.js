@@ -52,7 +52,7 @@ const settingsSchema = new mongoose.Schema({
           default: ["User"],
         },
       },
-      TimeSheetEdit: {
+      timeSheetEdit: {
         label: { type: String, default: "Edit Timesheet Data" },
         roles: { type: Array, default: ["User"] },
       },

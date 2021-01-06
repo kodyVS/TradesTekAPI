@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   Name: {
     type: String,
     required: [true, "Please tell us your name!"],
+    unique: true,
   },
   Email: {
     type: String,
@@ -16,7 +17,24 @@ const userSchema = new mongoose.Schema({
     validate: [validator.isEmail, "Please provide a valid email"],
   },
   Photo: {
-    type: String,
+    asset_id: String,
+    public_id: String,
+    version: Number,
+    version_id: String,
+    signature: String,
+    width: Number,
+    height: Number,
+    format: String,
+    resource_type: String,
+    created_at: String,
+    tags: [],
+    bytes: Number,
+    etag: String,
+    placeholder: Boolean,
+    url: String,
+    secure_url: String,
+    access_mode: String,
+    iconURL: String,
   },
   UserRole: {
     type: String,
@@ -45,7 +63,6 @@ const userSchema = new mongoose.Schema({
   Active: {
     type: Boolean,
     default: true,
-    select: false,
   },
   EmployeeReference: {
     type: mongoose.Schema.Types.ObjectId,

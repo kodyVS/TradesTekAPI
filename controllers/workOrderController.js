@@ -1,6 +1,9 @@
+//todo move image uploads to a new controller
+
 const catchAsync = require("../utils/catchAsync");
 const factory = require("./factoryHandler");
 const WorkOrder = require("../models/workOrderModel");
+const User = require("../models/userModel");
 const Counter = require("../models/counterModel");
 const AppError = require("../utils/appError");
 const data2xml = require("data2xml");
@@ -37,6 +40,7 @@ const parser = new DatauriParser();
 //Upload document file
 exports.uploadImage = catchAsync(async (req, res, next) => {
   let data;
+  console.log(req.body);
   try {
     //parsing buffer into a base64 string
     const file = parser.format(
@@ -44,19 +48,37 @@ exports.uploadImage = catchAsync(async (req, res, next) => {
       req.file.buffer
     ).content;
 
-    //Uploading the file to cloudinary
-    let uploadedResponse = await cloudinary.uploader.upload(file, {
-      upload_preset: "workorderfiles",
-    });
-    await WorkOrder.findByIdAndUpdate(
-      req.body._id,
-      { $push: { Images: uploadedResponse } },
-      { new: true }
-    ).catch((err) => {
-      console.log(err);
-    });
+    if (req.body.modelName === "WorkOrder") {
+      let uploadedResponse = await cloudinary.uploader.upload(file, {
+        upload_preset: "workorderfiles",
+      });
+      await WorkOrder.findByIdAndUpdate(
+        req.body._id,
+        { $push: { Images: uploadedResponse } },
+        { new: true }
+      ).catch((err) => {
+        console.log(err);
+      });
 
-    data = uploadedResponse;
+      data = uploadedResponse;
+    }
+    if (req.body.modelName === "user") {
+      let uploadedResponse = await cloudinary.uploader.upload(file, {
+        upload_preset: "userFiles",
+      });
+      let splitURL = uploadedResponse.url.split("/upload/");
+      uploadedResponse.iconURL =
+        splitURL[0] + "/upload/w_150,h_150,c_fill,g_face,r_max/" + splitURL[1];
+      await User.findByIdAndUpdate(
+        req.body._id,
+        { Photo: uploadedResponse },
+        { new: true }
+      ).catch((err) => {
+        console.log(err);
+      });
+
+      data = uploadedResponse;
+    }
   } catch (error) {
     data = error;
     console.log(error);
