@@ -448,13 +448,26 @@ exports.getAllActiveWorkOrders = catchAsync(async (req, res, next) => {
   if (req.query.LowRange) {
     let lowRange = req.query.LowRange;
     let highRange = req.query.HighRange;
-    (searchFilter.$or = [
-      { StartDate: { $gte: lowRange } },
-      { EndDate: { $gte: highRange } },
-    ]),
-      (searchFilter.StartDate = {
-        $lte: highRange,
-      });
+    searchFilter.$or = [
+      {
+        $and: [
+          { StartDate: { $gte: lowRange } },
+          { StartDate: { $lte: highRange } },
+        ],
+      },
+      {
+        $and: [
+          { EndDate: { $lte: highRange } },
+          { EndDate: { $gte: lowRange } },
+        ],
+      },
+      {
+        $and: [
+          { StartDate: { $lte: lowRange } },
+          { EndDate: { $gte: highRange } },
+        ],
+      },
+    ];
   }
   await WorkOrder.find(searchFilter)
     .select("-TimeReference")
